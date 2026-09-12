@@ -138,7 +138,7 @@ REQ-CON-003 は、依存ライブラリを OSI 承認のオープンソースラ
 3. メタデータが空または「Custom」の場合は、配布されている LICENSE 本文を読み、OSI 承認との対応が取れなければ採用しない。
 4. セットアップ段階（ネットワーク可）で `pnpm export-licenses`（`scripts/export_licenses.py`）を実行し、`docs/dependency-licenses-python.md` と `docs/dependency-licenses-web.txt` をリポジトリに残す。実行段階ではライセンス取得のためにネットへ出ない。
 5. ベースライン重みとサンプル画像のライセンスは配布資産の記載を正とする（`MANIFEST.json` のモデルは BSD-3-Clause）。`assets/` は改変しない。
-6. Vite / browserslist がセットアップ段階でロックする `caniuse-lite` は **CC-BY-4.0** である。ソフトウェアライセンスではなくブラウザ機能表の帰属付きデータであり、実行時にネットへ取りに行かない。REQ-CON-003 の「同等以上に許諾的」として、この種のデータパッケージに限り CC-BY-4.0 を許可する。本体コードの依存を Creative Commons にする場合は Issue で人間が決める。
+6. Vite / browserslist がセットアップ段階でロックする `caniuse-lite` は **CC-BY-4.0** である。ソフトウェアライセンスではなくブラウザ機能表の帰属付きデータであり、実行時にネットへ取りに行かない。REQ-CON-003 の「同等以上に許諾的」として **`caniuse-lite` のみ** 許可する。他の Creative Commons 依存を足す場合は Issue で人間が決める。
 
 ### 4.2 プロジェクトとしての追加方針
 

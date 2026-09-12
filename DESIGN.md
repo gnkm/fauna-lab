@@ -120,7 +120,7 @@ web/              # Vite + React + TypeScript
 4. GPL / AGPL / SSPL は OSI 承認でも **依存として採用しない**（許諾的な側へ寄せる解釈。緩める場合は人間が Issue で決める）。
 5. セットアップ段階でライセンス一覧を生成してリポジトリに残す。実行段階ではライセンス取得のためにネットへ出ない。
 6. ベースライン重みは `MANIFEST.json` の BSD-3-Clause を正とする。`assets/` は改変しない。
-7. Vite / browserslist 経由の `caniuse-lite` は CC-BY-4.0（ブラウザ機能表）。実行時ネット無し。データパッケージに限り REQ-CON-003 の「同等以上に許諾的」として許可する（ARCHITECTURE.md 4.1）。
+7. Vite / browserslist 経由の `caniuse-lite` は CC-BY-4.0（ブラウザ機能表）。実行時ネット無し。許可するのは **`caniuse-lite` のみ**（ARCHITECTURE.md 4.1.6）。他の Creative Commons 依存は Issue で人間が決める。
 
 ### 2.4 不採用（転記）
 

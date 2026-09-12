@@ -8,14 +8,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# Python 側の OSI 集合に加え、ARCHITECTURE.md 4.1.6 のデータパッケージ例外。
+# Python 側の OSI 集合。CC-BY-4.0 は全パッケージ許可にしない。
 ALLOWED_WEB_SPDX = frozenset(
     {
         "Apache-2.0",
         "BSD-2-Clause",
         "BSD-3-Clause",
         "BlueOak-1.0.0",
-        "CC-BY-4.0",
         "HPND",
         "ISC",
         "MIT",
@@ -26,6 +25,9 @@ ALLOWED_WEB_SPDX = frozenset(
         "Zlib",
     }
 )
+
+# ARCHITECTURE.md 4.1.6。名前で列挙したデータパッケージだけ CC-BY-4.0 を許す。
+DATA_PACKAGES_CC_BY_4_0 = frozenset({"caniuse-lite"})
 
 LICENSE_ALIASES = {
     "apache-2.0": "Apache-2.0",
@@ -89,6 +91,9 @@ def test_committed_web_licenses_are_permissive() -> None:
             continue
         name, _version, license_name = parts
         tokens = _tokens(license_name)
-        if not tokens or any(token not in ALLOWED_WEB_SPDX for token in tokens):
+        allowed = ALLOWED_WEB_SPDX
+        if name in DATA_PACKAGES_CC_BY_4_0:
+            allowed = ALLOWED_WEB_SPDX | {"CC-BY-4.0"}
+        if not tokens or any(token not in allowed for token in tokens):
             unknown.append(f"{name}: {license_name}")
     assert not unknown, f"unmapped or disallowed web licenses: {unknown}"
