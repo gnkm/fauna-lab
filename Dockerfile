@@ -17,15 +17,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY container/www/index.html /app/index.html
-COPY container/entrypoint.sh /entrypoint.sh
-
-RUN chmod 0755 /entrypoint.sh
 
 EXPOSE 8000
 
-# ルートで起動し、entrypoint がデータディレクトリを FAUNALAB_UID（既定 1000）へ
-# chown してからその UID へ落とす。nobody 固定だとホストの ./data に書けない。
-ENTRYPOINT ["/entrypoint.sh"]
+# 実行ユーザはコンテナ内 uid 0。ルートレス Podman ではホストユーザーに写る。
+# bind mount をコンテナ内の 1000 や nobody へ chown しない（DESIGN I-UID-001）。
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2)"
