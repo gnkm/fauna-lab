@@ -546,9 +546,27 @@ REQ-CON-003 より狭く、GPL/AGPL/SSPL を依存から外す（2.3）。仕様
 **I-POR-001 複製は停止後**
 REQ-ATT-POR-001 は複製手順を書かない。WAL のため、稼働中コピーは同一時点を保証できない。契約はサービス停止後のディレクトリ全体コピーに限る。
 
+**I-UID-001 データ bind の所有権は user namespace で分岐する**
+実行の正はルートレス Podman である。コンテナ内 uid 0 はホストユーザーに写るので、データディレクトリへの書き込みはそのままホストユーザー所有になる。ここでコンテナ内 1000 や nobody へ `chown` すると、ホスト側 `./data` が subordinate UID 所有になり、オペレータが読めなくなる。UID が user namespace の範囲外なら `chown` 自体が失敗して起動できない。
+
+同一イメージを rootful Docker で動かす経路（Cursor Cloud Agent）では、コンテナ内 uid 0 はホストの root である。このとき永続ファイルが root 所有だと、ホストの通常ユーザーがコピーも削除もできない。entrypoint は `/proc/self/uid_map` を見て、ホスト写像が `0 0`（名前空間なし）のときだけ `FAUNALAB_UID`/`FAUNALAB_GID`（既定 1000）へ chown してからその UID で動かす。ルートレスでは chown しない。
+
+**I-NET-001 Compose では外部通信を完全遮断できない**
+REQ-COM-002 は起動後の通常動作で、ループバックと同一ホスト内を除く外部ネットワーク通信を禁ずる。Compose で可能な範囲として、実行時は `pull_policy: never` とし、ユーザ定義ブリッジの IP masquerade を切る（`com.docker.network.bridge.enable_ip_masquerade: "false"`）。ホストへのポート公開（inbound、既定 8000）は残す。
+
+`internal: true` は採らない。Docker では内部ネットワーク上のサービスに対するホストのポート公開が無効になり、README の単一コマンド起動（`127.0.0.1:8000`）と衝突する。Cloud Agent は同一 `compose.yaml` を Docker で動かす（I-ENV-001）。
+
+残る限界:
+
+- masquerade 無効は Docker の bridge オプションである。Podman は無視することがあり、その場合の出口制御はアプリが実行時クライアントを持たないことに依存する。
+- ホスト OS の NIC 切断、IPv6、エンジンの DNS フォールバックまでは保証しない。
+- rootful と rootless で実装差がある。
+
+提出時の実証（VER-CON-001）はホスト側でネットワークを遮断して起動コマンドを 1 回実行する。Compose の制約は補助であり、完全エアギャップの代替ではない。
+
 ### 10.2 仕様を満たせなかった箇所
 
-現時点の実装は無い。本 Issue の範囲外。実装後に未達があれば本項へ移す。
+アプリ本体は未実装である。F004 はイメージ定義と Compose 契約までである。Compose のネットワーク制約はホスト級の完全遮断ではない（I-NET-001）。実装後に未達があれば本項へ移す。
 
 ### 10.3 判断を保留した箇所（未決）
 
@@ -573,8 +591,7 @@ REQ-ATT-POR-001 は複製手順を書かない。WAL のため、稼働中コピ
 ### 10.5 既知の制約
 
 - 同時学習は 1 件。認証は無い。信頼されたネットワーク向け。
-- 実行段階の外部ネットワークは禁止（REQ-CON-001、REQ-COM-002）。
+- 実行段階の外部ネットワークは禁止（REQ-CON-001、REQ-COM-002）。Compose の masquerade 無効はコンテナ起点の NAT 出口を拒む補助であり、ホストの完全遮断までは保証しない（I-NET-001）。
 - `docs/source-of-truth/` と `assets/` は読み取り専用。生成・改変・削除・リネーム・移動をしない。
 - ベースラインは未収録 2 クラスを予測しない。これは欠陥ではなく 3.5.2 の意図である。
 - Windows 対応は任意。提出と開発の正は Linux / macOS + Podman（Cloud は Docker）。
-)

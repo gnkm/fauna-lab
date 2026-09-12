@@ -168,20 +168,22 @@ GPL / AGPL / SSPL 等は OSI 承認でも、成果物全体を copyleft にす�
 
 ### 5.2 Compose の契約
 
-後続の骨格 Issue が追加する `compose.yaml` は、次を満たす。ファイルが未作成でも、配置とコマンドはこの契約に従う。
+リポジトリ直下の `compose.yaml`（F004）は、次を満たす。アプリ本体は後続の骨格 Issue で置き換える。イメージとマウントの契約は本節が正である。
 
 - サービス名は `app` のみ。
-- ビルド文脈はリポジトリルート。イメージ名は `faunalab:local`。
+- ビルド文脈はリポジトリルート。イメージ名は `faunalab:local`。実行時は `pull_policy: never`（レジストリへ取りに行かない）。
 - ポート: `"${FAUNALAB_PORT:-8000}:8000"`。左辺だけが `FAUNALAB_PORT`。コンテナ内の待受は 8000 に固定し、コンテナへ `FAUNALAB_PORT` を渡さない（公開先と Uvicorn の待受がずれないようにする）。
 - ボリューム:
   - データ: ホストの `${FAUNALAB_DATA_DIR:-./data}` をコンテナの `/var/lib/faunalab` へ読み書きマウント。
   - 資産: ホストの `${FAUNALAB_ASSETS_DIR:-./assets}` を `/var/lib/faunalab-assets` へ **読み取り専用** マウント（`:ro`）。SELinux 環境では `:ro,Z` を骨格 Issue で足してよい。
 - 環境変数で `FAUNALAB_DATA_DIR=/var/lib/faunalab`、`FAUNALAB_ASSETS_DIR=/var/lib/faunalab-assets` を渡す。
+- 実行ユーザはコンテナ内 uid 0 を既定とする。ルートレス（user namespace で uid 0 がホストユーザーに写る）では chown しない。rootful のみ entrypoint が `FAUNALAB_UID`/`FAUNALAB_GID`（既定 1000）へ落とし、ホストユーザーが `./data` を管理できるようにする（DESIGN.md 解釈 I-UID-001）。
 - 再起動ポリシーは既定で付けない（学習中クラッシュの扱いは REQ-F-TRN-014 に従い、自動で学習をやり直さない）。
+- ネットワーク: ユーザ定義ブリッジ `faunalab`。`internal: true` は Docker でホストのポート公開を落とすため使わない。代わりに `com.docker.network.bridge.enable_ip_masquerade: "false"` で、エンジンが解釈する範囲の NAT 出口を拒む。完全なホスト級エアギャップにはならない（DESIGN.md 解釈 I-NET-001）。
 
-コンテナ定義ファイル名は `Containerfile` を正とし、Docker 互換のため同じ内容の `Dockerfile` を置く（または一方を他方へコピーする）。骨格 Issue で片方に統一する場合は、Podman と Docker の双方で `compose build` が通ることを優先する。
+コンテナ定義ファイル名は `Containerfile` を正とし、Docker 互換のため同じ内容の `Dockerfile` を置く。片方に統一する場合は、Podman と Docker の双方で `compose build` が通ることを優先する。
 
-マルチステージビルドを用いる。セットアップ（イメージビルド）でフロントを `pnpm build` し、実行イメージは Python ランタイム + 静的ファイル + ロック済み Python 依存だけにする。
+骨格 Issue 以降はマルチステージビルドを用いる。セットアップ（イメージビルド）でフロントを `pnpm build` し、実行イメージは Python ランタイム + 静的ファイル + ロック済み Python 依存だけにする。F004 時点のイメージはポート 8000 のプレースホルダであり、ベースライン重みはコピーしない。
 
 ### 5.3 Cursor Cloud Agent での起動差分
 
@@ -270,6 +272,9 @@ backend/                 # Python パッケージ（uv / pyproject.toml）
 web/                     # Vite + React + TypeScript
 compose.yaml
 Containerfile
+Dockerfile               # Containerfile と同一。Docker 互換
+container/www/           # プレースホルダ静的ファイル（骨格 Issue で廃止）
+container/entrypoint.sh  # rootful のみ UID 降下。ルートレスでは uid 0 のまま
 docs/ARCHITECTURE.md     # 本ファイル
 docs/source-of-truth/    # 読み取り専用
 assets/                  # 読み取り専用の配布資産

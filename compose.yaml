@@ -1,0 +1,35 @@
+# FaunaLab Compose 契約（docs/ARCHITECTURE.md 5.2、機能 ID F004）。
+# セットアップ: podman compose build
+# 実行:         podman compose up --pull never
+# Cursor Cloud Agent では同一ファイルを docker compose で使う。
+#
+# 再起動ポリシーは付けない（学習中クラッシュを自動でやり直さない）。
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: faunalab:local
+    pull_policy: never
+    ports:
+      - "${FAUNALAB_PORT:-8000}:8000"
+    environment:
+      FAUNALAB_DATA_DIR: /var/lib/faunalab
+      FAUNALAB_ASSETS_DIR: /var/lib/faunalab-assets
+      FAUNALAB_UID: ${FAUNALAB_UID:-1000}
+      FAUNALAB_GID: ${FAUNALAB_GID:-1000}
+    volumes:
+      - ${FAUNALAB_DATA_DIR:-./data}:/var/lib/faunalab
+      - ${FAUNALAB_ASSETS_DIR:-./assets}:/var/lib/faunalab-assets:ro
+    networks:
+      - faunalab
+
+networks:
+  faunalab:
+    driver: bridge
+    # internal: true は Docker でホストへのポート公開を落とすため使わない。
+    # masquerade を切ると、エンジンが解釈する範囲でコンテナ起点の NAT 出口を拒む。
+    # Podman はこの Docker 向けオプションを無視することがある（DESIGN I-NET-001）。
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "false"
