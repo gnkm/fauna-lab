@@ -33,9 +33,9 @@ Cursor Cloud Agents 向けの作業ルール。アプリ固有のルールはプ
 
 ### Environment
 
-- Cloud の依存準備は `.cursor/environment.json` の `install` で行う（現状: `pnpm install`）。
+- 技術スタックと実行形態は `docs/ARCHITECTURE.md` を正とする（Python 3.12 / FastAPI / SQLite / Vite、実行は Podman、Cloud では同一 OCI を Docker）。
+- Cloud の依存準備は `.cursor/environment.json` の `install` で行う（現状: `pnpm install`。Python 骨格と lockfile が追加されたら更新する）。
 - 長時間常駐プロセスは `install` に置かず、必要になったら `start` / `terminals` に追加する。
-- 技術スタックや起動方法が決まったら、この節と `install` を更新する。
 
 ### 検証
 
