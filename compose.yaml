@@ -26,4 +26,8 @@ services:
 networks:
   faunalab:
     driver: bridge
-    internal: true
+    # internal: true は Docker でホストへのポート公開を落とすため使わない。
+    # masquerade を切ると、エンジンが解釈する範囲でコンテナ起点の NAT 出口を拒む。
+    # Podman はこの Docker 向けオプションを無視することがある（DESIGN I-NET-001）。
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "false"
