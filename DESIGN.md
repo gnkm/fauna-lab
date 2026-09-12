@@ -96,7 +96,7 @@ web/              # Vite + React + TypeScript
 | 前処理 | torchvision（短辺 256・中央 224・ImageNet 正規化） | 出典と同じ実装で期待値差 0.02 以内を狙う |
 | フロントエンド | TypeScript + Vite + React。静的成果物を API と同じオリジンで配信 | 既存の pnpm / Biome と整合。実行時 Node を増やさない |
 | パッケージ管理 | バックエンドは uv（`pyproject.toml` / `uv.lock`）、フロントは pnpm | lefthook の osv-scanner 対象と一致 |
-| 静的解析 | フロントは Biome、バックエンドは Ruff（型は Pyright または mypy） | REQ-ATT-MNT-003。型チェッカの選定は骨格 Issue（**未決**：Pyright か mypy か） |
+| 静的解析 | フロントは Biome、バックエンドは Ruff、型は Pyright | REQ-ATT-MNT-003。型チェッカは骨格 Issue で Pyright に固定 |
 | 試験 | pytest（API / `_state`）、Playwright（UI の一部） | SRS 4 章の「操作は UI、確認は `_state`」に合わせる |
 | 実行環境 | **Podman**（ローカルおよび提出）。単一コマンドは Compose | リポジトリ共通制約。Cloud Agent では同一 OCI を Docker Compose で起動する |
 | 学習の計算 | CPU で完結。GPU があれば使ってよいが必須ではない | REQ-HW-002、1.3.4 |
