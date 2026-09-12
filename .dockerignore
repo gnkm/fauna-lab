@@ -10,3 +10,8 @@ assets
 .cursor-audit.jsonl
 **/__pycache__
 **/.venv
+web/dist
+backend/tests
+**/.pytest_cache
+**/.coverage
+htmlcov

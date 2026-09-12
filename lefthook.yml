@@ -5,6 +5,10 @@ pre-commit:
       glob: "*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,json,jsonc,css}"
       run: pnpm exec biome format --write {staged_files}
       stage_fixed: true
+    ruff-check:
+      glob: "*.py"
+      run: uv run --project backend ruff check --fix {staged_files}
+      stage_fixed: true
     osv-scanner:
       # glob は相対パス全体に対して照合される。`**/` はディレクトリを1つ以上要求するため
       # ルート直下の package.json が漏れる。逆に `**/` 無しだけでは入れ子が漏れる。両方書く。
