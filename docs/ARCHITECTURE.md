@@ -93,7 +93,7 @@ flowchart LR
 | --- | --- | --- |
 | Python 3.12 | バックエンドと ML を同一言語に閉じる。3.12 は PyTorch / ONNX Runtime の車輪が安定している | 推論と学習を別言語にすると、前処理一致（REQ-F-TRN-016、REQ-F-BASE-002）の保証が難しくなる |
 | FastAPI + Uvicorn | ASGI、型付きの要求/応答、OpenAPI 生成が REQ-API-002 に直結する | Flask は OpenAPI を別途組み立てるコストが大きい |
-| SQLite | プロセス追加なし。データディレクトリを複製すれば復元できる（REQ-ATT-POR-001）。想定規模は画像 5,000・モデル 50 | PostgreSQL はセットアップと実行の分離、単一コマンド起動を重くする |
+| SQLite | プロセス追加なし。**サービス停止後に**データディレクトリ全体を複製すれば復元できる（REQ-ATT-POR-001、手順は 6.4）。想定規模は画像 5,000・モデル 50 | PostgreSQL はセットアップと実行の分離、単一コマンド起動を重くする |
 | ONNX Runtime | 配布資産が ONNX（opset 13、入力 `[N,3,224,224]`、出力 `logits` と `embedding`） | 形式変換せずにベースラインを読める |
 | PyTorch CPU | 学習の実装。ベースライン利用時は embedding（1280 次元）を入力とする分類ヘッドのみを訓練する | フルバックボーン学習は 4 論理 CPU・30 分制約（REQ-PERF-004）に対して過剰 |
 | torchvision | 共通前処理（短辺 256・中央 224・ImageNet 正規化）をベースライン出典と同じ実装で行う | 期待値差 0.02 以内（REQ-F-BASE-010）をコードの独自リサイズに頼らない |
@@ -162,7 +162,7 @@ GPL / AGPL / SSPL 等は OSI 承認でも、成果物全体を copyleft にす�
 
 イメージ内にベースライン重みは **コピーしない**。`assets/` はホスト（または提出ディレクトリ）から読み取り専用マウントする。無い状態でも起動する（REQ-CON-007）。
 
-待受は HTTP/1.1、コンテナ内 8000。ホスト公開ポートは環境変数で変える（REQ-COM-001）。
+待受は HTTP/1.1。Compose ではコンテナ内プロセスは常に 8000 で待ち受け、ホスト公開だけを `FAUNALAB_PORT`（既定 8000）で変える（REQ-COM-001）。公開と待受の対応は 5.2 と 6.1 を正とする。
 
 アプリケーションコードは、ループバックと同一ホスト内通信を除き、外部ネットワークへ接続しない。Compose のポート公開は inbound のみを意図する。実行時に依存やモデルを取得するクライアントを置かない。
 
@@ -172,6 +172,7 @@ GPL / AGPL / SSPL 等は OSI 承認でも、成果物全体を copyleft にす�
 
 - サービス名は `app` のみ。
 - ビルド文脈はリポジトリルート。イメージ名は `faunalab:local`。
+- ポート: `"${FAUNALAB_PORT:-8000}:8000"`。左辺だけが `FAUNALAB_PORT`。コンテナ内の待受は 8000 に固定し、コンテナへ `FAUNALAB_PORT` を渡さない（公開先と Uvicorn の待受がずれないようにする）。
 - ボリューム:
   - データ: ホストの `${FAUNALAB_DATA_DIR:-./data}` をコンテナの `/var/lib/faunalab` へ読み書きマウント。
   - 資産: ホストの `${FAUNALAB_ASSETS_DIR:-./assets}` を `/var/lib/faunalab-assets` へ **読み取り専用** マウント（`:ro`）。SELinux 環境では `:ro,Z` を骨格 Issue で足してよい。
@@ -193,7 +194,7 @@ Cursor Cloud Agent ではローカル Podman は使えない。**同一の OCI �
 
 差分はオーケストレータのバイナリ名だけとする。Compose ファイル、環境変数、マウント、ポート、イメージ内容を分岐させない。Cloud 向けの別 Dockerfile を作らない。
 
-開発中のホットリロード（ホストで Uvicorn + Vite）は補助であり、提出物の実行形態ではない。補助経路を足す場合も、データディレクトリと `assets/` の意味は Compose と同一の環境変数で合わせる。
+開発中のホットリロード（ホストで Uvicorn + Vite）は補助であり、提出物の実行形態ではない。補助経路を足す場合、データディレクトリと `assets/` の環境変数は Compose と同一とする。ホスト直接起動ではプロセス自身が `FAUNALAB_PORT` で待ち受ける（Compose のコンテナ内 8000 固定とはここだけ異なる）。
 
 対象 OS は Linux（x86_64 / arm64）と macOS（REQ-CON-004）。macOS では Podman Machine 上で上記コマンドを実行する。Windows は任意。
 
@@ -207,7 +208,7 @@ REQ-CON-005 の設定は次の名前で与える。ソース変更なしで変�
 
 | 変数 | 既定 | 意味 |
 | --- | --- | --- |
-| `FAUNALAB_PORT` | `8000` | 待受ポート |
+| `FAUNALAB_PORT` | `8000` | オペレータが接続するホスト側ポート。Compose では `"${FAUNALAB_PORT}:8000"` の左辺のみ。コンテナ内プロセスの待受は常に 8000。ホスト直接起動ではプロセスがこの値で待ち受ける |
 | `FAUNALAB_DATA_DIR` | コンテナ内 `/var/lib/faunalab`（ホスト既定 `./data`） | 実行時に生成する全ファイルの基底 |
 | `FAUNALAB_ASSETS_DIR` | コンテナ内 `/var/lib/faunalab-assets`（ホスト既定 `./assets`） | 配布資産。読み取り専用として扱う |
 | `FAUNALAB_CORS_ORIGINS` | 空（同一オリジンのみ） | 許可オリジン。カンマ区切り |
@@ -236,6 +237,19 @@ ${FAUNALAB_DATA_DIR}/
 - 実装は `assets/` を生成・改変・削除しない。
 - 実行時マウントは読み取り専用。コードも `FAUNALAB_ASSETS_DIR` へ書き込まない（REQ-F-BASE-011）。
 - パスは環境変数で替える。存在しない場合は警告を出して起動を継続し、モデル版 0 を登録しない。
+
+### 6.4 データディレクトリの複製（REQ-ATT-POR-001）
+
+WAL 使用時、稼働中に `db.sqlite3`・`-wal`・`-shm`・画像・モデルを順にコピーすると同一時点の状態にならない。**復元が要求される複製は、複製元のサービスを停止したあとだけを契約とする。** 稼働中のコピー、部分コピー、SQLite ファイルだけのコピーは保証しない。
+
+手順:
+
+1. 複製元で学習ジョブが終端状態であることを確認する。実行中なら中止するか完了を待つ。
+2. `podman compose down`（Cloud では `docker compose down`）でプロセスを止める。これで WAL の書き込みが止まり、`-wal` / `-shm` が残っていても静止する。
+3. `FAUNALAB_DATA_DIR` 配下を **ディレクトリごと** 複製する（`db.sqlite3`、`db.sqlite3-wal`、`db.sqlite3-shm`、`images/`、`thumbs/`、`models/`、`jobs/` を含む）。
+4. 複製先で同一版のイメージを起動する。`assets/` は配布資産として別にマウントする（データディレクトリへ含めない）。
+
+停止前に `PRAGMA wal_checkpoint(TRUNCATE)` をかけて `-wal` を本体へ戻してもよいが、必須ではない。停止後のディレクトリ全体コピーで復元できればよい。
 
 ---
 
