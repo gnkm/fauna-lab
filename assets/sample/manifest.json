@@ -1,0 +1,4807 @@
+{
+  "manifest_version": 1,
+  "source": "Oxford-IIIT Pet Dataset",
+  "license": "CC BY-SA 4.0",
+  "items": [
+    {
+      "file": "images/samoyed_1.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_2.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_3.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_4.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_5.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_6.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_7.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_8.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_9.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_10.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_11.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_12.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_13.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_14.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_15.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_16.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_17.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_18.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_19.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_20.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_21.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_22.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_23.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_24.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_25.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_26.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_27.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_28.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_29.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_30.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_31.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_32.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_33.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_34.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_35.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_36.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_37.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_38.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_39.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_40.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_41.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_42.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_43.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_44.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_45.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_46.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_47.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_48.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_49.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_50.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_51.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_52.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_53.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_54.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_55.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_56.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_57.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_58.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_59.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_60.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_61.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_62.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_63.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_64.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_65.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_66.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_67.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_68.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_69.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_70.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_71.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_72.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_73.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_74.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_75.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_76.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_77.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_78.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_79.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_80.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_81.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_82.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_83.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_84.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_85.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_86.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_87.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_88.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_89.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_90.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_91.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_92.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_93.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_94.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_95.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_96.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_97.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_98.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_99.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_100.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_101.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_102.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_103.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_104.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_105.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_106.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_107.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_108.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_109.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_110.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_111.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_112.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_113.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_114.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_115.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_116.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_117.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_118.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_119.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_120.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_121.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_122.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_123.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_124.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_125.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_126.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_127.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_128.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_129.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_130.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_131.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_132.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_133.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_134.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_135.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_136.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_137.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_138.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_139.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_140.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_141.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_142.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_143.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_144.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_145.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_146.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_147.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_148.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_149.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/samoyed_150.jpg",
+      "class_id": "samoyed"
+    },
+    {
+      "file": "images/great_pyrenees_1.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_2.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_3.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_4.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_5.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_6.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_7.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_8.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_9.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_10.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_11.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_12.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_13.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_14.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_15.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_16.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_17.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_18.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_19.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_20.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_21.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_22.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_23.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_24.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_25.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_26.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_27.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_28.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_29.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_30.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_31.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_32.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_33.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_34.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_35.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_36.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_37.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_38.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_39.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_40.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_41.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_42.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_43.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_44.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_45.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_46.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_47.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_48.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_49.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_50.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_51.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_52.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_53.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_54.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_55.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_56.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_57.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_58.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_59.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_60.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_61.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_62.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_63.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_64.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_65.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_66.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_67.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_68.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_69.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_70.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_71.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_72.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_73.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_74.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_75.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_76.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_77.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_78.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_79.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_80.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_81.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_82.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_83.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_84.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_85.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_86.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_87.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_88.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_89.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_90.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_91.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_92.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_93.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_94.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_95.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_96.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_97.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_98.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_99.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_100.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_101.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_102.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_103.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_104.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_105.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_106.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_107.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_108.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_109.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_110.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_111.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_112.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_113.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_114.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_115.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_116.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_117.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_118.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_119.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_120.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_121.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_122.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_123.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_124.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_125.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_126.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_127.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_128.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_129.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_130.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_131.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_132.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_133.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_134.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_135.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_136.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_137.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_138.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_139.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_140.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_141.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_142.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_143.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_144.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_145.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_146.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_147.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_148.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_149.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_150.jpg",
+      "class_id": "great_pyrenees"
+    },
+    {
+      "file": "images/boxer_1.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_2.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_3.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_4.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_5.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_6.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_7.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_8.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_9.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_10.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_11.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_12.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_13.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_14.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_15.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_16.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_17.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_18.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_19.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_20.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_21.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_22.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_23.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_24.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_25.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_26.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_27.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_28.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_29.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_30.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_31.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_32.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_33.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_34.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_35.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_36.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_37.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_38.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_39.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_40.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_41.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_42.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_43.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_44.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_45.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_46.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_47.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_48.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_49.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_50.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_51.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_52.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_53.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_54.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_55.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_56.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_57.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_58.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_59.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_60.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_61.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_62.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_63.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_64.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_65.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_66.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_67.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_68.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_69.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_70.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_71.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_72.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_73.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_74.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_75.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_76.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_77.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_78.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_79.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_80.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_81.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_82.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_83.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_84.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_85.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_86.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_87.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_88.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_89.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_90.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_91.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_92.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_93.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_94.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_95.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_96.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_97.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_98.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_99.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_100.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_101.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_102.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_103.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_104.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_105.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_106.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_107.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_108.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_109.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_110.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_111.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_112.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_113.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_114.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_115.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_116.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_117.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_118.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_119.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_120.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_121.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_122.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_123.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_124.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_125.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_126.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_127.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_128.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_129.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_130.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_131.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_132.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_133.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_134.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_135.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_136.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_137.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_138.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_139.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_140.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_141.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_142.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_143.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_144.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_145.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_146.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_147.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_148.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_149.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/boxer_150.jpg",
+      "class_id": "boxer"
+    },
+    {
+      "file": "images/american_bulldog_2.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_3.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_5.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_6.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_7.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_8.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_9.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_10.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_11.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_12.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_13.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_14.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_15.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_16.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_18.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_19.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_20.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_21.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_22.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_23.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_24.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_25.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_26.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_27.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_28.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_29.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_30.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_31.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_32.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_33.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_34.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_35.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_36.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_37.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_38.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_39.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_40.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_41.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_42.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_43.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_44.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_45.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_46.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_47.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_48.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_49.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_50.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_51.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_52.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_53.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_54.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_55.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_56.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_57.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_58.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_59.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_60.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_61.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_62.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_63.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_64.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_65.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_66.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_67.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_68.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_69.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_70.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_71.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_72.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_73.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_74.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_75.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_76.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_77.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_78.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_79.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_80.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_81.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_82.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_83.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_84.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_85.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_86.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_87.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_89.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_90.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_91.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_92.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_93.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_94.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_95.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_96.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_97.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_98.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_99.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_100.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_101.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_102.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_103.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_104.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_105.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_106.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_107.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_108.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_109.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_110.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_111.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_112.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_113.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_114.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_115.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_116.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_117.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_118.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_119.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_120.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_121.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_122.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_123.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_124.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_125.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_126.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_127.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_128.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_129.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_130.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_131.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_132.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_133.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_134.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_135.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_136.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_137.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_138.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_139.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_140.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_141.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_142.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_143.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_144.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_146.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_147.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_148.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_149.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_150.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_151.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_152.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_153.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_158.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/american_bulldog_161.jpg",
+      "class_id": "american_bulldog"
+    },
+    {
+      "file": "images/chihuahua_1.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_2.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_3.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_4.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_5.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_6.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_7.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_8.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_9.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_10.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_11.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_12.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_13.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_14.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_15.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_16.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_17.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_18.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_19.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_20.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_21.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_22.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_23.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_24.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_25.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_26.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_27.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_28.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_29.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_30.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_31.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_32.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_33.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_34.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_35.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_36.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_37.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_38.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_39.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_40.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_41.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_42.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_43.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_44.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_45.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_46.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_47.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_48.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_49.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_50.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_51.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_52.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_53.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_54.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_55.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_56.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_57.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_58.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_59.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_60.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_61.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_62.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_63.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_64.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_65.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_66.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_67.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_68.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_69.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_70.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_71.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_72.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_73.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_74.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_75.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_76.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_77.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_78.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_79.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_80.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_81.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_82.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_83.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_84.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_85.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_86.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_87.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_88.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_89.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_90.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_91.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_92.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_93.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_94.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_95.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_96.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_97.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_98.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_99.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_100.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_101.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_102.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_103.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_104.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_105.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_106.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_107.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_108.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_109.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_110.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_111.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_112.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_113.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_114.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_115.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_116.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_117.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_118.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_119.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_120.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_121.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_122.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_123.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_124.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_125.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_126.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_127.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_128.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_129.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_130.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_131.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_132.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_133.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_134.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_135.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_136.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_137.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_138.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_139.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_140.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_141.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_142.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_143.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_144.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_145.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_146.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_147.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_148.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_149.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_150.jpg",
+      "class_id": "chihuahua"
+    },
+    {
+      "file": "images/miniature_pinscher_1.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_2.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_3.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_4.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_5.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_6.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_7.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_8.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_9.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_10.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_11.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_12.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_13.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_14.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_15.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_16.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_17.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_18.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_19.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_20.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_21.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_22.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_23.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_24.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_25.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_26.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_27.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_28.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_29.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_30.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_31.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_32.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_33.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_34.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_35.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_36.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_37.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_38.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_39.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_40.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_41.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_42.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_43.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_44.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_45.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_46.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_47.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_48.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_49.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_50.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_51.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_52.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_53.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_54.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_55.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_56.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_57.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_58.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_59.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_60.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_61.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_62.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_63.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_64.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_65.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_66.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_67.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_68.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_69.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_70.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_71.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_72.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_73.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_74.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_75.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_76.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_77.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_78.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_79.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_80.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_81.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_82.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_83.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_84.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_85.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_86.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_87.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_88.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_89.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_90.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_91.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_92.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_93.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_94.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_95.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_96.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_97.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_98.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_99.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_100.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_101.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_102.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_103.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_104.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_105.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_106.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_107.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_108.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_109.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_110.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_111.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_112.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_113.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_114.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_115.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_116.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_117.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_118.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_119.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_120.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_121.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_122.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_123.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_124.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_125.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_126.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_127.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_128.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_129.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_130.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_131.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_132.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_133.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_134.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_135.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_136.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_137.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_138.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_139.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_140.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_141.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_142.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_143.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_144.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_145.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_146.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_147.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_148.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_149.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_150.jpg",
+      "class_id": "miniature_pinscher"
+    },
+    {
+      "file": "images/pomeranian_1.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_2.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_3.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_4.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_5.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_6.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_7.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_8.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_9.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_10.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_11.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_12.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_13.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_14.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_15.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_16.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_17.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_18.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_19.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_20.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_21.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_22.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_23.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_24.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_25.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_26.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_27.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_28.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_29.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_30.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_31.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_32.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_33.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_34.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_35.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_36.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_37.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_38.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_39.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_40.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_41.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_42.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_43.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_44.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_45.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_46.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_47.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_48.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_49.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_50.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_51.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_52.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_53.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_54.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_55.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_56.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_57.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_58.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_59.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_60.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_61.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_62.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_63.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_64.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_65.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_66.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_67.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_68.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_69.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_70.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_71.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_72.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_73.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_74.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_75.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_76.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_77.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_78.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_79.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_80.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_81.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_82.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_83.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_84.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_85.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_86.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_87.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_88.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_89.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_90.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_91.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_92.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_93.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_94.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_95.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_96.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_97.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_98.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_99.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_100.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_101.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_102.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_103.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_104.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_105.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_106.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_107.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_108.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_109.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_110.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_111.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_112.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_113.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_114.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_115.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_116.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_117.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_118.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_119.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_120.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_121.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_122.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_123.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_124.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_125.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_126.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_127.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_128.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_129.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_130.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_131.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_132.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_133.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_134.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_135.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_136.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_137.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_138.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_139.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_140.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_141.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_142.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_143.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_144.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_145.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_146.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_147.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_148.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_149.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_150.jpg",
+      "class_id": "pomeranian"
+    },
+    {
+      "file": "images/havanese_1.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_2.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_3.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_4.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_5.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_6.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_7.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_8.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_9.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_10.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_11.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_12.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_13.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_14.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_15.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_16.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_17.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_18.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_19.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_20.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_21.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_22.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_23.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_24.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_25.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_26.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_27.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_28.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_29.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_30.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_31.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_32.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_33.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_34.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_35.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_36.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_37.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_38.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_39.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_40.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_41.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_42.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_43.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_44.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_45.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_46.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_47.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_48.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_49.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_50.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_51.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_52.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_53.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_54.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_55.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_56.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_57.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_58.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_59.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_60.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_61.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_62.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_63.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_64.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_65.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_66.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_67.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_68.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_69.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_70.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_71.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_72.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_73.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_74.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_75.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_76.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_77.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_78.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_79.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_80.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_81.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_82.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_83.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_84.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_85.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_86.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_87.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_88.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_89.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_90.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_91.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_92.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_93.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_94.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_95.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_96.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_97.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_98.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_99.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_100.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_101.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_102.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_103.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_104.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_105.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_106.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_107.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_108.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_109.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_110.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_111.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_112.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_113.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_114.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_115.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_116.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_117.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_118.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_119.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_120.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_121.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_122.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_123.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_124.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_125.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_126.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_127.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_128.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_129.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_130.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_131.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_132.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_133.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_134.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_135.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_136.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_137.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_138.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_139.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_140.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_141.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_142.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_143.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_144.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_145.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_146.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_147.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_148.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_149.jpg",
+      "class_id": "havanese"
+    },
+    {
+      "file": "images/havanese_150.jpg",
+      "class_id": "havanese"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "map_version": 1,
+  "model_file": "model.onnx",
+  "generated_at": "2026-09-12T15:20:15Z",
+  "classes": {
+    "samoyed": [
+      258
+    ],
+    "great_pyrenees": [
+      257
+    ],
+    "boxer": [
+      242
+    ],
+    "american_bulldog": [],
+    "chihuahua": [
+      151
+    ],
+    "miniature_pinscher": [
+      237
+    ],
+    "pomeranian": [
+      259
+    ],
+    "havanese": []
+  },
+  "notes": {
+    "american_bulldog": "ImageNet-1k に対応クラスなし。bull mastiff や Staffordshire bullterrier を代替として割り当ててはならない。",
+    "havanese": "ImageNet-1k に対応クラスなし。近縁の小型長毛種を代替として割り当ててはならない。"
+  }
+}

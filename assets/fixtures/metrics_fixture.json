@@ -1,0 +1,185 @@
+{
+  "fixture_version": 1,
+  "items": [
+    {
+      "file": "images/samoyed_151.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/samoyed_152.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/samoyed_153.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/samoyed_154.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/samoyed_155.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/samoyed_156.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/samoyed_157.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/samoyed_158.jpg",
+      "assigned_class_id": "samoyed",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/great_pyrenees_151.jpg",
+      "assigned_class_id": "great_pyrenees",
+      "baseline_predicts": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_152.jpg",
+      "assigned_class_id": "great_pyrenees",
+      "baseline_predicts": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_153.jpg",
+      "assigned_class_id": "great_pyrenees",
+      "baseline_predicts": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_154.jpg",
+      "assigned_class_id": "great_pyrenees",
+      "baseline_predicts": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_155.jpg",
+      "assigned_class_id": "great_pyrenees",
+      "baseline_predicts": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_156.jpg",
+      "assigned_class_id": "great_pyrenees",
+      "baseline_predicts": "great_pyrenees"
+    },
+    {
+      "file": "images/great_pyrenees_176.jpg",
+      "assigned_class_id": "great_pyrenees",
+      "baseline_predicts": "samoyed"
+    },
+    {
+      "file": "images/boxer_151.jpg",
+      "assigned_class_id": "boxer",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/boxer_152.jpg",
+      "assigned_class_id": "boxer",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/boxer_153.jpg",
+      "assigned_class_id": "boxer",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/boxer_155.jpg",
+      "assigned_class_id": "boxer",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/boxer_156.jpg",
+      "assigned_class_id": "boxer",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/boxer_157.jpg",
+      "assigned_class_id": "boxer",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/american_bulldog_164.jpg",
+      "assigned_class_id": "american_bulldog",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/american_bulldog_166.jpg",
+      "assigned_class_id": "american_bulldog",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/american_bulldog_167.jpg",
+      "assigned_class_id": "american_bulldog",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/american_bulldog_168.jpg",
+      "assigned_class_id": "american_bulldog",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/american_bulldog_169.jpg",
+      "assigned_class_id": "american_bulldog",
+      "baseline_predicts": "boxer"
+    },
+    {
+      "file": "images/chihuahua_151.jpg",
+      "assigned_class_id": "chihuahua",
+      "baseline_predicts": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_152.jpg",
+      "assigned_class_id": "chihuahua",
+      "baseline_predicts": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_153.jpg",
+      "assigned_class_id": "chihuahua",
+      "baseline_predicts": "chihuahua"
+    },
+    {
+      "file": "images/chihuahua_155.jpg",
+      "assigned_class_id": "chihuahua",
+      "baseline_predicts": "chihuahua"
+    },
+    {
+      "file": "images/miniature_pinscher_151.jpg",
+      "assigned_class_id": "miniature_pinscher",
+      "baseline_predicts": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_152.jpg",
+      "assigned_class_id": "miniature_pinscher",
+      "baseline_predicts": "miniature_pinscher"
+    },
+    {
+      "file": "images/miniature_pinscher_181.jpg",
+      "assigned_class_id": "miniature_pinscher",
+      "baseline_predicts": "chihuahua"
+    },
+    {
+      "file": "images/pomeranian_152.jpg",
+      "assigned_class_id": "pomeranian",
+      "baseline_predicts": "pomeranian"
+    },
+    {
+      "file": "images/pomeranian_153.jpg",
+      "assigned_class_id": "pomeranian",
+      "baseline_predicts": "pomeranian"
+    },
+    {
+      "file": "images/havanese_151.jpg",
+      "assigned_class_id": "havanese",
+      "baseline_predicts": "pomeranian"
+    }
+  ]
+}

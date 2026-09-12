@@ -1,0 +1,151 @@
+{
+  "expectations_version": 1,
+  "model_sha256": "b4d7d130909cde409f24c76d26637f35c924e69db4eac5fb1bdb208671b88955",
+  "class_map_sha256": "d35a509fec70e2f6ed1146da5ffc349bb26a469dcbac2739211562bed5aeb6f4",
+  "items": [
+    {
+      "file": "images/samoyed_169.jpg",
+      "expected_top_class_id": "samoyed",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/samoyed_172.jpg",
+      "expected_top_class_id": "samoyed",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/samoyed_200.jpg",
+      "expected_top_class_id": "samoyed",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/great_pyrenees_165.jpg",
+      "expected_top_class_id": "great_pyrenees",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/great_pyrenees_190.jpg",
+      "expected_top_class_id": "great_pyrenees",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/great_pyrenees_199.jpg",
+      "expected_top_class_id": "great_pyrenees",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/boxer_168.jpg",
+      "expected_top_class_id": "boxer",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/boxer_154.jpg",
+      "expected_top_class_id": "boxer",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/boxer_190.jpg",
+      "expected_top_class_id": "boxer",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/american_bulldog_182.jpg",
+      "expected_top_class_id": "boxer",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/american_bulldog_203.jpg",
+      "expected_top_class_id": "boxer",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/american_bulldog_172.jpg",
+      "expected_top_class_id": "boxer",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/chihuahua_154.jpg",
+      "expected_top_class_id": "chihuahua",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/chihuahua_198.jpg",
+      "expected_top_class_id": "chihuahua",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/chihuahua_158.jpg",
+      "expected_top_class_id": "chihuahua",
+      "expected_top_confidence": 1.0,
+      "margin": 0.9999
+    },
+    {
+      "file": "images/miniature_pinscher_163.jpg",
+      "expected_top_class_id": "miniature_pinscher",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/miniature_pinscher_160.jpg",
+      "expected_top_class_id": "miniature_pinscher",
+      "expected_top_confidence": 1.0,
+      "margin": 0.9999
+    },
+    {
+      "file": "images/miniature_pinscher_155.jpg",
+      "expected_top_class_id": "miniature_pinscher",
+      "expected_top_confidence": 0.9999,
+      "margin": 0.9997
+    },
+    {
+      "file": "images/pomeranian_188.jpg",
+      "expected_top_class_id": "pomeranian",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/pomeranian_186.jpg",
+      "expected_top_class_id": "pomeranian",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/pomeranian_166.jpg",
+      "expected_top_class_id": "pomeranian",
+      "expected_top_confidence": 1.0,
+      "margin": 1.0
+    },
+    {
+      "file": "images/havanese_165.jpg",
+      "expected_top_class_id": "great_pyrenees",
+      "expected_top_confidence": 0.9952,
+      "margin": 0.9923
+    },
+    {
+      "file": "images/havanese_159.jpg",
+      "expected_top_class_id": "pomeranian",
+      "expected_top_confidence": 0.9912,
+      "margin": 0.987
+    },
+    {
+      "file": "images/havanese_177.jpg",
+      "expected_top_class_id": "pomeranian",
+      "expected_top_confidence": 0.9876,
+      "margin": 0.9827
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "source": "torchvision mobilenet_v3_large IMAGENET1K_V1",
+  "license": "BSD-3-Clause",
+  "embedding_dim": 1280,
+  "opset": 13
+}

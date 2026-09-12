@@ -1,0 +1,32 @@
+{
+  "manifest_version": 1,
+  "generated_at": "2026-09-12T15:41:16Z",
+  "model": {
+    "file": "model.onnx",
+    "sha256": "b4d7d130909cde409f24c76d26637f35c924e69db4eac5fb1bdb208671b88955",
+    "format": "onnx",
+    "opset": 13,
+    "input_name": "input",
+    "input_shape": [
+      1,
+      3,
+      224,
+      224
+    ],
+    "logits_output_name": "logits",
+    "embedding_output_name": "embedding",
+    "embedding_dim": 1280,
+    "source": "torchvision mobilenet_v3_large IMAGENET1K_V1",
+    "license": "BSD-3-Clause"
+  },
+  "files": [
+    {
+      "file": "class_map.json",
+      "sha256": "d35a509fec70e2f6ed1146da5ffc349bb26a469dcbac2739211562bed5aeb6f4"
+    },
+    {
+      "file": "imagenet_classes.json",
+      "sha256": "856df79490a2414b507f977f82408c1805ce4e8245ff74f5d148435a089e9ae4"
+    }
+  ]
+}
