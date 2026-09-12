@@ -37,7 +37,7 @@ podman compose up --pull never
 ブラウザで `http://127.0.0.1:8000/` を開く。`--build` は実行コマンドに含めない（セットアップと実行を混ぜない）。
 
 - 配布資産 `assets/` は読み取り専用でマウントする。無くても起動する。
-- 実行時データは `${FAUNALAB_DATA_DIR:-./data}` にだけ書く。
+- 実行時データは `${FAUNALAB_DATA_DIR:-./data}` にだけ書く。起動時にディレクトリ所有者を UID 1000（`FAUNALAB_UID` / `FAUNALAB_GID`）へ揃える。
 
 詳細（環境変数、マウント先、ネットワーク分離）は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 5–6 節。
 

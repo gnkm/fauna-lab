@@ -177,6 +177,7 @@ GPL / AGPL / SSPL 等は OSI 承認でも、成果物全体を copyleft にす�
   - データ: ホストの `${FAUNALAB_DATA_DIR:-./data}` をコンテナの `/var/lib/faunalab` へ読み書きマウント。
   - 資産: ホストの `${FAUNALAB_ASSETS_DIR:-./assets}` を `/var/lib/faunalab-assets` へ **読み取り専用** マウント（`:ro`）。SELinux 環境では `:ro,Z` を骨格 Issue で足してよい。
 - 環境変数で `FAUNALAB_DATA_DIR=/var/lib/faunalab`、`FAUNALAB_ASSETS_DIR=/var/lib/faunalab-assets` を渡す。
+- データ bind の書き込み: コンテナはルートで起動し、エントリポイントが `${FAUNALAB_DATA_DIR}` を `FAUNALAB_UID`/`FAUNALAB_GID`（既定 1000）へ chown してからその UID でプロセスを動かす。ホストの UID が 1000 でないときは同名の環境変数で合わせる。`nobody` 固定にはしない（ホスト側 `./data` の所有者とずれる）。
 - 再起動ポリシーは既定で付けない（学習中クラッシュの扱いは REQ-F-TRN-014 に従い、自動で学習をやり直さない）。
 - ネットワーク: ユーザ定義ブリッジ `faunalab`。`internal: true` は Docker でホストのポート公開を落とすため使わない。代わりに `com.docker.network.bridge.enable_ip_masquerade: "false"` で、エンジンが解釈する範囲の NAT 出口を拒む。完全なホスト級エアギャップにはならない（DESIGN.md 解釈 I-NET-001）。
 
@@ -273,6 +274,7 @@ compose.yaml
 Containerfile
 Dockerfile               # Containerfile と同一。Docker 互換
 container/www/           # プレースホルダ静的ファイル（骨格 Issue で廃止）
+container/entrypoint.sh  # データディレクトリの chown と UID 降下
 docs/ARCHITECTURE.md     # 本ファイル
 docs/source-of-truth/    # 読み取り専用
 assets/                  # 読み取り専用の配布資産
