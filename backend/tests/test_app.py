@@ -16,6 +16,11 @@ def test_openapi_is_served(client: TestClient) -> None:
     assert body["info"]["title"] == "FaunaLab"
 
 
+def test_swagger_html_is_disabled(client: TestClient) -> None:
+    response = client.get("/docs")
+    assert response.status_code == 404
+
+
 def test_cors_middleware_is_added_when_origins_set() -> None:
     settings = Settings(
         cors_origins="http://localhost:5173",
