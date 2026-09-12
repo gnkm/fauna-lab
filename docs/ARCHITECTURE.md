@@ -168,20 +168,21 @@ GPL / AGPL / SSPL 等は OSI 承認でも、成果物全体を copyleft にす�
 
 ### 5.2 Compose の契約
 
-後続の骨格 Issue が追加する `compose.yaml` は、次を満たす。ファイルが未作成でも、配置とコマンドはこの契約に従う。
+リポジトリ直下の `compose.yaml`（F004）は、次を満たす。アプリ本体は後続の骨格 Issue で置き換える。イメージとマウントの契約は本節が正である。
 
 - サービス名は `app` のみ。
-- ビルド文脈はリポジトリルート。イメージ名は `faunalab:local`。
+- ビルド文脈はリポジトリルート。イメージ名は `faunalab:local`。実行時は `pull_policy: never`（レジストリへ取りに行かない）。
 - ポート: `"${FAUNALAB_PORT:-8000}:8000"`。左辺だけが `FAUNALAB_PORT`。コンテナ内の待受は 8000 に固定し、コンテナへ `FAUNALAB_PORT` を渡さない（公開先と Uvicorn の待受がずれないようにする）。
 - ボリューム:
   - データ: ホストの `${FAUNALAB_DATA_DIR:-./data}` をコンテナの `/var/lib/faunalab` へ読み書きマウント。
   - 資産: ホストの `${FAUNALAB_ASSETS_DIR:-./assets}` を `/var/lib/faunalab-assets` へ **読み取り専用** マウント（`:ro`）。SELinux 環境では `:ro,Z` を骨格 Issue で足してよい。
 - 環境変数で `FAUNALAB_DATA_DIR=/var/lib/faunalab`、`FAUNALAB_ASSETS_DIR=/var/lib/faunalab-assets` を渡す。
 - 再起動ポリシーは既定で付けない（学習中クラッシュの扱いは REQ-F-TRN-014 に従い、自動で学習をやり直さない）。
+- ネットワーク: ユーザ定義ブリッジ `faunalab` を `internal: true` にする。コンテナ起点の外部到達を Compose で拒む。ホストからのポート公開（inbound）は残す。完全なホスト級エアギャップにはならない（DESIGN.md 解釈 I-NET-001）。
 
-コンテナ定義ファイル名は `Containerfile` を正とし、Docker 互換のため同じ内容の `Dockerfile` を置く（または一方を他方へコピーする）。骨格 Issue で片方に統一する場合は、Podman と Docker の双方で `compose build` が通ることを優先する。
+コンテナ定義ファイル名は `Containerfile` を正とし、Docker 互換のため同じ内容の `Dockerfile` を置く。片方に統一する場合は、Podman と Docker の双方で `compose build` が通ることを優先する。
 
-マルチステージビルドを用いる。セットアップ（イメージビルド）でフロントを `pnpm build` し、実行イメージは Python ランタイム + 静的ファイル + ロック済み Python 依存だけにする。
+骨格 Issue 以降はマルチステージビルドを用いる。セットアップ（イメージビルド）でフロントを `pnpm build` し、実行イメージは Python ランタイム + 静的ファイル + ロック済み Python 依存だけにする。F004 時点のイメージはポート 8000 のプレースホルダであり、ベースライン重みはコピーしない。
 
 ### 5.3 Cursor Cloud Agent での起動差分
 
@@ -270,6 +271,8 @@ backend/                 # Python パッケージ（uv / pyproject.toml）
 web/                     # Vite + React + TypeScript
 compose.yaml
 Containerfile
+Dockerfile               # Containerfile と同一。Docker 互換
+container/www/           # プレースホルダ静的ファイル（骨格 Issue で廃止）
 docs/ARCHITECTURE.md     # 本ファイル
 docs/source-of-truth/    # 読み取り専用
 assets/                  # 読み取り専用の配布資産
