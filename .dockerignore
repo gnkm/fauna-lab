@@ -1,0 +1,12 @@
+.git
+.github
+.cursor
+.agents
+.vscode
+node_modules
+data
+assets
+.env
+.cursor-audit.jsonl
+**/__pycache__
+**/.venv

@@ -1,0 +1,29 @@
+# FaunaLab Compose 契約（docs/ARCHITECTURE.md 5.2、機能 ID F004）。
+# セットアップ: podman compose build
+# 実行:         podman compose up --pull never
+# Cursor Cloud Agent では同一ファイルを docker compose で使う。
+#
+# 再起動ポリシーは付けない（学習中クラッシュを自動でやり直さない）。
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: faunalab:local
+    pull_policy: never
+    ports:
+      - "${FAUNALAB_PORT:-8000}:8000"
+    environment:
+      FAUNALAB_DATA_DIR: /var/lib/faunalab
+      FAUNALAB_ASSETS_DIR: /var/lib/faunalab-assets
+    volumes:
+      - ${FAUNALAB_DATA_DIR:-./data}:/var/lib/faunalab
+      - ${FAUNALAB_ASSETS_DIR:-./assets}:/var/lib/faunalab-assets:ro
+    networks:
+      - faunalab
+
+networks:
+  faunalab:
+    driver: bridge
+    internal: true
