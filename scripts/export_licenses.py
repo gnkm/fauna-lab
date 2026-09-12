@@ -43,21 +43,37 @@ def _license_of(pkg: dict[str, object]) -> str:
     return "UNKNOWN"
 
 
-def export_web(dest: Path) -> None:
-    store = ROOT / "node_modules" / ".pnpm"
+def _web_package_jsons(store: Path) -> list[Path]:
+    # unscoped:  .pnpm/foo@1/node_modules/foo/package.json
+    # scoped:    .pnpm/@scope+bar@1/node_modules/@scope/bar/package.json
+    found = {
+        *store.glob("*/node_modules/*/package.json"),
+        *store.glob("*/node_modules/@*/*/package.json"),
+    }
+    return sorted(found)
+
+
+def iter_web_packages(root: Path | None = None) -> list[tuple[str, str, str]]:
+    store = (root or ROOT) / "node_modules" / ".pnpm"
     rows: list[tuple[str, str, str]] = []
     seen: set[tuple[str, str]] = set()
-    if store.is_dir():
-        for pkg_json in store.glob("*/node_modules/*/package.json"):
-            data = json.loads(pkg_json.read_text(encoding="utf-8"))
-            name = str(data.get("name") or pkg_json.parent.name)
-            version = str(data.get("version") or "")
-            key = (name, version)
-            if key in seen:
-                continue
-            seen.add(key)
-            rows.append((name, version, _license_of(data)))
+    if not store.is_dir():
+        return rows
+    for pkg_json in _web_package_jsons(store):
+        data = json.loads(pkg_json.read_text(encoding="utf-8"))
+        name = str(data.get("name") or pkg_json.parent.name)
+        version = str(data.get("version") or "")
+        key = (name, version)
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append((name, version, _license_of(data)))
     rows.sort()
+    return rows
+
+
+def export_web(dest: Path) -> None:
+    rows = iter_web_packages()
     lines = [
         "# Frontend dependency licenses",
         "",

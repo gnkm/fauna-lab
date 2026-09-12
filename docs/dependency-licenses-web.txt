@@ -4,6 +4,43 @@ Generated from `node_modules/.pnpm` package metadata. No network.
 
 | Name | Version | License |
 | --- | --- | --- |
+| @babel/code-frame | 7.29.7 | MIT |
+| @babel/compat-data | 7.29.7 | MIT |
+| @babel/core | 7.29.7 | MIT |
+| @babel/generator | 7.29.8 | MIT |
+| @babel/helper-compilation-targets | 7.29.7 | MIT |
+| @babel/helper-globals | 7.29.7 | MIT |
+| @babel/helper-module-imports | 7.29.7 | MIT |
+| @babel/helper-module-transforms | 7.29.7 | MIT |
+| @babel/helper-plugin-utils | 7.29.7 | MIT |
+| @babel/helper-string-parser | 7.29.7 | MIT |
+| @babel/helper-validator-identifier | 7.29.7 | MIT |
+| @babel/helper-validator-option | 7.29.7 | MIT |
+| @babel/helpers | 7.29.7 | MIT |
+| @babel/parser | 7.29.8 | MIT |
+| @babel/plugin-transform-react-jsx-self | 7.29.7 | MIT |
+| @babel/plugin-transform-react-jsx-source | 7.29.7 | MIT |
+| @babel/template | 7.29.7 | MIT |
+| @babel/traverse | 7.29.8 | MIT |
+| @babel/types | 7.29.8 | MIT |
+| @biomejs/biome | 2.5.8 | MIT OR Apache-2.0 |
+| @biomejs/cli-linux-x64 | 2.5.8 | MIT OR Apache-2.0 |
+| @esbuild/linux-x64 | 0.28.2 | MIT |
+| @jridgewell/gen-mapping | 0.3.13 | MIT |
+| @jridgewell/remapping | 2.3.5 | MIT |
+| @jridgewell/resolve-uri | 3.1.2 | MIT |
+| @jridgewell/sourcemap-codec | 1.6.0 | MIT |
+| @jridgewell/trace-mapping | 0.3.31 | MIT |
+| @rolldown/pluginutils | 1.0.0-rc.3 | MIT |
+| @rollup/rollup-linux-x64-gnu | 4.63.2 | MIT |
+| @types/babel__core | 7.20.5 | MIT |
+| @types/babel__generator | 7.27.0 | MIT |
+| @types/babel__template | 7.4.4 | MIT |
+| @types/babel__traverse | 7.28.0 | MIT |
+| @types/estree | 1.0.9 | MIT |
+| @types/react | 19.3.0 | MIT |
+| @types/react-dom | 19.3.0 | MIT |
+| @vitejs/plugin-react | 5.2.0 | MIT |
 | baseline-browser-mapping | 2.11.23 | Apache-2.0 |
 | browserslist | 4.28.9 | MIT |
 | caniuse-lite | 1.0.30001810 | CC-BY-4.0 |
