@@ -178,7 +178,7 @@ GPL / AGPL / SSPL 等は OSI 承認でも、成果物全体を copyleft にす�
   - 資産: ホストの `${FAUNALAB_ASSETS_DIR:-./assets}` を `/var/lib/faunalab-assets` へ **読み取り専用** マウント（`:ro`）。SELinux 環境では `:ro,Z` を骨格 Issue で足してよい。
 - 環境変数で `FAUNALAB_DATA_DIR=/var/lib/faunalab`、`FAUNALAB_ASSETS_DIR=/var/lib/faunalab-assets` を渡す。
 - 再起動ポリシーは既定で付けない（学習中クラッシュの扱いは REQ-F-TRN-014 に従い、自動で学習をやり直さない）。
-- ネットワーク: ユーザ定義ブリッジ `faunalab` を `internal: true` にする。コンテナ起点の外部到達を Compose で拒む。ホストからのポート公開（inbound）は残す。完全なホスト級エアギャップにはならない（DESIGN.md 解釈 I-NET-001）。
+- ネットワーク: ユーザ定義ブリッジ `faunalab`。`internal: true` は Docker でホストのポート公開を落とすため使わない。代わりに `com.docker.network.bridge.enable_ip_masquerade: "false"` で、エンジンが解釈する範囲の NAT 出口を拒む。完全なホスト級エアギャップにはならない（DESIGN.md 解釈 I-NET-001）。
 
 コンテナ定義ファイル名は `Containerfile` を正とし、Docker 互換のため同じ内容の `Dockerfile` を置く。片方に統一する場合は、Podman と Docker の双方で `compose build` が通ることを優先する。
 
