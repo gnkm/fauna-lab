@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # .cursor/hooks/guard-write.sh
-# docs/source-of-truth/ へのエージェントによる書き込み・削除をブロックする。
+# docs/source-of-truth/ および assets/ へのエージェントによる書き込み・削除をブロックする。
 #
 # 読み取りは許可する。シェル経由の改変は guard-shell.sh 側で見る。
 # hooks.json 側で failClosed: true を付けること（既定はフェイルオープン）。
@@ -16,12 +16,18 @@ deny() {
   exit 0
 }
 
-is_protected_path() {
+# 保護パスに一致したらラベルを stdout に出し、一致しなければ何も出さない。
+protected_label() {
   local p="$1"
   [[ -z "$p" || "$p" == "null" ]] && return 1
   p="${p#./}"
   case "$p" in
     docs/source-of-truth|docs/source-of-truth/*|*/docs/source-of-truth|*/docs/source-of-truth/*)
+      printf '%s' "docs/source-of-truth/"
+      return 0
+      ;;
+    assets|assets/*|*/assets|*/assets/*)
+      printf '%s' "assets/"
       return 0
       ;;
   esac
@@ -30,10 +36,11 @@ is_protected_path() {
 
 while IFS= read -r path; do
   [[ -z "$path" ]] && continue
-  if is_protected_path "$path"; then
+  label=$(protected_label "$path" || true)
+  if [[ -n "$label" ]]; then
     deny \
-      "docs/source-of-truth/ は読み取り専用です。編集はブロックされました: $path" \
-      "Do not edit, delete, rename, or move files under docs/source-of-truth/. Reading is allowed. Ask a human if changes are needed."
+      "${label} は読み取り専用です。編集はブロックされました: $path" \
+      "Do not edit, delete, rename, or move files under ${label}. Reading is allowed. Ask a human if changes are needed."
   fi
 done < <(printf '%s' "$input" | jq -r '
   [

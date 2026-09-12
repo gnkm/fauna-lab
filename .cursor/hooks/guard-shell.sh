@@ -43,17 +43,29 @@ if printf '%s' "$cmd" | grep -qE 'git[[:space:]]+push([[:space:]].*)?[[:space:]:
   deny_agent "保護ブランチへの直接 push は禁止されています。feature ブランチと PR を使ってください。"
 fi
 
-# docs/source-of-truth/ へのシェル経由の改変をブロックする。
+# docs/source-of-truth/ および assets/ へのシェル経由の改変をブロックする。
 # パスがコマンド文字列に含まれるだけでは拒否しない（コミットメッセージ等の誤検知を避ける）。
 # 破壊的コマンドがコマンド位置にあるとき、またはリダイレクト先が保護パスのときだけ拒否する。
-if printf '%s' "$cmd" | grep -qE '(^|[^[:alnum:]_-])docs/source-of-truth([/[:space:]"'\'']|$)'; then
-  if printf '%s' "$cmd" | grep -qE '(^|[;&|]|&&|\|\|)[[:space:]]*(rm|rmdir|unlink|mv|cp|mkdir|touch|truncate|chmod|chown|ln|install|dd|shred|sed[[:space:]]+-[^[:space:]]*i|perl[[:space:]]+-[^[:space:]]*i|git[[:space:]]+(rm|mv|checkout|restore|reset|clean))([[:space:]]|$)'; then
-    deny_agent "docs/source-of-truth/ は読み取り専用です。シェルでの改変・削除・移動は禁止されています。読み取りのみ許可します。"
+# path_re は「境界の直後から保護パスとして完結する」正規表現であること。
+deny_protected_shell_mutation() {
+  local path_re="$1"
+  local label="$2"
+  if printf '%s' "$cmd" | grep -qE "(^|[^[:alnum:]_-])${path_re}"; then
+    if printf '%s' "$cmd" | grep -qE '(^|[;&|]|&&|\|\|)[[:space:]]*(rm|rmdir|unlink|mv|cp|mkdir|touch|truncate|chmod|chown|ln|install|dd|shred|sed[[:space:]]+-[^[:space:]]*i|perl[[:space:]]+-[^[:space:]]*i|git[[:space:]]+(rm|mv|checkout|restore|reset|clean))([[:space:]]|$)'; then
+      deny_agent "${label} は読み取り専用です。シェルでの改変・削除・移動は禁止されています。読み取りのみ許可します。"
+    fi
+    # tee は引数より後ろに保護パスがあるときだけ拒否する（| tee /tmp への読み出しコピーは許可）。
+    if printf '%s' "$cmd" | grep -qE "(>|>>|[|][[:space:]]*tee([[:space:]]|$)).*${path_re}"; then
+      deny_agent "${label} への書き込みリダイレクトは禁止されています。"
+    fi
   fi
-  # tee は引数より後ろに保護パスがあるときだけ拒否する（| tee /tmp への読み出しコピーは許可）。
-  if printf '%s' "$cmd" | grep -qE '(>|>>|[|][[:space:]]*tee([[:space:]]|$)).*docs/source-of-truth'; then
-    deny_agent "docs/source-of-truth/ への書き込みリダイレクトは禁止されています。"
-  fi
+}
+
+deny_protected_shell_mutation 'docs/source-of-truth([/[:space:]"'\'']|$)' 'docs/source-of-truth/'
+# assets は短い語なので assets/ 形式、または引数末尾の素の assets のみ。
+deny_protected_shell_mutation 'assets/' 'assets/'
+if printf '%s' "$cmd" | grep -qE '(^|[;&|]|&&|\|\|)[[:space:]]*(rm|rmdir|unlink|mv|cp|mkdir|touch|truncate|chmod|chown|ln|install|dd|shred|sed[[:space:]]+-[^[:space:]]*i|perl[[:space:]]+-[^[:space:]]*i|git[[:space:]]+(rm|mv|checkout|restore|reset|clean))([[:space:]].*)?[[:space:]]assets([\"[:space:]]|$)'; then
+  deny_agent "assets/ は読み取り専用です。シェルでの改変・削除・移動は禁止されています。読み取りのみ許可します。"
 fi
 
 # サンドボックス外での実行を記録する（ブロックはしない）

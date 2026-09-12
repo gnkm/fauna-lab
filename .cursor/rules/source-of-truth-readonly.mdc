@@ -1,11 +1,12 @@
 ---
-description: docs/source-of-truth と ai.editable:false は読み取り専用。編集禁止。
+description: docs/source-of-truth・assets・ai.editable:false は読み取り専用。編集禁止。
 alwaysApply: true
 ---
 
-# 読み取り専用（source-of-truth）
+# 読み取り専用（source-of-truth / assets）
 
 - Never edit, delete, rename, or move any file under `docs/source-of-truth/`.
+- Never edit, delete, rename, or move any file under `assets/` (配布資産。生成・改変禁止)。
 - Never edit files whose frontmatter has `ai.editable: false` or `ai_editable: false`.
 - Reading and citing them is allowed and encouraged.
 - If a change seems necessary, open or update a GitHub Issue for a human; do not modify the files yourself.
