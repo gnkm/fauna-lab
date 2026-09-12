@@ -17,11 +17,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY container/www/index.html /app/index.html
+COPY container/entrypoint.sh /entrypoint.sh
+
+RUN chmod 0755 /entrypoint.sh
 
 EXPOSE 8000
 
-# プレースホルダはデータディレクトリへ書かない。後続のアプリ骨格で UID を合わせる。
-USER nobody:nogroup
+# ルートで起動し、entrypoint がデータディレクトリを FAUNALAB_UID（既定 1000）へ
+# chown してからその UID へ落とす。nobody 固定だとホストの ./data に書けない。
+ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2)"
