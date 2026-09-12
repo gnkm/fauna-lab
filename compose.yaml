@@ -17,6 +17,8 @@ services:
     environment:
       FAUNALAB_DATA_DIR: /var/lib/faunalab
       FAUNALAB_ASSETS_DIR: /var/lib/faunalab-assets
+      FAUNALAB_UID: ${FAUNALAB_UID:-1000}
+      FAUNALAB_GID: ${FAUNALAB_GID:-1000}
     volumes:
       - ${FAUNALAB_DATA_DIR:-./data}:/var/lib/faunalab
       - ${FAUNALAB_ASSETS_DIR:-./assets}:/var/lib/faunalab-assets:ro

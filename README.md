@@ -37,7 +37,7 @@ podman compose up --pull never
 ブラウザで `http://127.0.0.1:8000/` を開く。`--build` は実行コマンドに含めない（セットアップと実行を混ぜない）。
 
 - 配布資産 `assets/` は読み取り専用でマウントする。無くても起動する。
-- 実行時データは `${FAUNALAB_DATA_DIR:-./data}` にだけ書く。ルートレス Podman ではコンテナ内 uid 0 がホストユーザーに写る。bind mount をコンテナ内 UID へ chown しない。
+- 実行時データは `${FAUNALAB_DATA_DIR:-./data}` にだけ書く。ルートレス Podman ではコンテナ内 uid 0 がホストユーザーに写る。rootful（Cloud の Docker など）では `FAUNALAB_UID`（既定 1000）で書き、ホストユーザーが `./data` を管理できるようにする。
 
 詳細（環境変数、マウント先、ネットワーク分離）は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 5–6 節。
 

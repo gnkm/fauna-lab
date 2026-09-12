@@ -546,10 +546,10 @@ REQ-CON-003 より狭く、GPL/AGPL/SSPL を依存から外す（2.3）。仕様
 **I-POR-001 複製は停止後**
 REQ-ATT-POR-001 は複製手順を書かない。WAL のため、稼働中コピーは同一時点を保証できない。契約はサービス停止後のディレクトリ全体コピーに限る。
 
-**I-UID-001 データ bind はコンテナ内で chown しない**
-実行の正はルートレス Podman である。コンテナ内 uid 0 はホストユーザーに写るので、データディレクトリへの書き込みはそのままホストユーザー所有になる。`nobody` やコンテナ内 1000 へ `chown` すると、ホスト側 `./data` が subordinate UID 所有になり、オペレータが読めなくなる。UID が user namespace の範囲外なら `chown` 自体が失敗して起動できない。
+**I-UID-001 データ bind の所有権は user namespace で分岐する**
+実行の正はルートレス Podman である。コンテナ内 uid 0 はホストユーザーに写るので、データディレクトリへの書き込みはそのままホストユーザー所有になる。ここでコンテナ内 1000 や nobody へ `chown` すると、ホスト側 `./data` が subordinate UID 所有になり、オペレータが読めなくなる。UID が user namespace の範囲外なら `chown` 自体が失敗して起動できない。
 
-したがって F004 のプレースホルダはコンテナ内 uid 0 のまま動かし、bind mount を chown しない。非 root 化は骨格 Issue で、user namespace を踏まえて行う。
+同一イメージを rootful Docker で動かす経路（Cursor Cloud Agent）では、コンテナ内 uid 0 はホストの root である。このとき永続ファイルが root 所有だと、ホストの通常ユーザーがコピーも削除もできない。entrypoint は `/proc/self/uid_map` を見て、ホスト写像が `0 0`（名前空間なし）のときだけ `FAUNALAB_UID`/`FAUNALAB_GID`（既定 1000）へ chown してからその UID で動かす。ルートレスでは chown しない。
 
 **I-NET-001 Compose では外部通信を完全遮断できない**
 REQ-COM-002 は起動後の通常動作で、ループバックと同一ホスト内を除く外部ネットワーク通信を禁ずる。Compose で可能な範囲として、実行時は `pull_policy: never` とし、ユーザ定義ブリッジの IP masquerade を切る（`com.docker.network.bridge.enable_ip_masquerade: "false"`）。ホストへのポート公開（inbound、既定 8000）は残す。
