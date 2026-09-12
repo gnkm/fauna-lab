@@ -5,6 +5,7 @@ Cursor Cloud Agents 向けの作業ルール。アプリ固有のルールはプ
 ## 編集禁止（読み取り専用）
 
 - `docs/source-of-truth/` 配下はソース・オブ・トゥルース。AI は読んでよいが、編集・削除・リネーム・移動は禁止。
+- `assets/` 配下は配布資産。AI は読んでよいが、生成・改変・削除・リネーム・移動は禁止。
 - フロントマターに `ai.editable: false`（または `ai_editable: false`）があるファイルも同様。
 - 内容変更が必要なら Issue で人間に依頼し、自分では触らない。
 
@@ -27,3 +28,27 @@ Cursor Cloud Agents 向けの作業ルール。アプリ固有のルールはプ
 
 - CI ワークフロー（`.github/workflows/`）を追加・変更したら、README 先頭付近にそのワークフローの状況バッジを必ず出す。無ければ追加する。
 - 例: `![CI](https://github.com/<owner>/<repo>/actions/workflows/<file>.yml/badge.svg)`
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- Cloud の依存準備は `.cursor/environment.json` の `install` で行う（現状: `pnpm install`）。
+- 長時間常駐プロセスは `install` に置かず、必要になったら `start` / `terminals` に追加する。
+- 技術スタックや起動方法が決まったら、この節と `install` を更新する。
+
+### 検証
+
+- 変更後は可能な範囲で自動試験・型検査・リンタを回してから PR にする。
+- CI ワークフロー追加後は、PR 上の Checks を確認する。
+- Issue の **検証** 欄がある場合は、そのコマンドを満たすこと。クローズ前に `verifier` を起動する。
+
+### 秘密情報
+
+- シークレットをコミットしない。Cursor Secrets または GitHub Actions secrets を使う。
+- `.env` はリポジトリに含めない。
+
+### このリポジトリの制約
+
+- 実行時の外部ネットワーク接続禁止など、仕様上の制約は `docs/source-of-truth/` を参照（編集はしない）。
+- `.cursor/hooks.json` により `docs/source-of-truth/` と `assets/` への書き込みはブロックされる。
