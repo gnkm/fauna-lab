@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import threading
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Protocol
 
 from faunalab.ml.predict import load_onnx_session
+
+# One active model at a time (REQ-F-MDL-003). Keep only the latest trained session.
+_MAX_TRAINED_SESSIONS = 1
 
 
 class OnnxRunnable(Protocol):
@@ -36,11 +40,14 @@ class LockedOnnxSession:
 
 
 class OnnxSessionCache:
-    """Keep one session per resolved artifact path; reload on mtime or size change."""
+    """Keep the latest trained session; reload on mtime or size change."""
 
-    def __init__(self) -> None:
+    def __init__(self, max_sessions: int = _MAX_TRAINED_SESSIONS) -> None:
+        self._max_sessions = max_sessions
         self._guard = threading.Lock()
-        self._items: dict[str, tuple[tuple[int, int], LockedOnnxSession]] = {}
+        self._items: OrderedDict[str, tuple[tuple[int, int], LockedOnnxSession]] = (
+            OrderedDict()
+        )
 
     def get(self, path: Path) -> LockedOnnxSession:
         resolved = str(path.resolve())
@@ -49,7 +56,11 @@ class OnnxSessionCache:
         with self._guard:
             current = self._items.get(resolved)
             if current is not None and current[0] == fingerprint:
+                self._items.move_to_end(resolved)
                 return current[1]
             wrapped = LockedOnnxSession(load_onnx_session(path))
             self._items[resolved] = (fingerprint, wrapped)
+            self._items.move_to_end(resolved)
+            while len(self._items) > self._max_sessions:
+                self._items.popitem(last=False)
             return wrapped

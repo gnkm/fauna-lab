@@ -50,3 +50,17 @@ def test_cache_reloads_when_file_changes(tmp_path: Path) -> None:
         second = cache.get(dest)
         assert spy.call_count == 1
     assert first is not second
+
+
+def test_cache_evicts_previous_trained_session(tmp_path: Path) -> None:
+    first_path = _cnn_onnx(tmp_path / "v1.onnx")
+    second_path = _cnn_onnx(tmp_path / "v2.onnx")
+    cache = OnnxSessionCache()
+    kept = cache.get(first_path)
+    cache.get(second_path)
+    with patch(
+        "faunalab.ml.session_cache.load_onnx_session", wraps=load_onnx_session
+    ) as spy:
+        reloaded = cache.get(first_path)
+        assert spy.call_count == 1
+    assert reloaded is not kept
