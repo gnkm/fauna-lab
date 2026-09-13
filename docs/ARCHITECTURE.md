@@ -308,11 +308,10 @@ data/                    # 実行時（git 対象外）
 次は意図して本 Issue で固定しない（F006 以降で扱う）。
 
 - JSON フィールドの最終集合（`openapi.yaml` 骨格の必須キー以外。F019 で実装と一致）
-- SQLite の表定義の詳細（`ref` は UUID v4。不変・非再利用は SRS どおり）
 - UI の画面 URL 設計、コンポーネント構成
 - pytest-cov の 70 % 閾値 enforce（F018/F019。骨格時点では計測のみ）
 
-パス・HTTP メソッド・ページネーション・誤り語彙は F006 の [`openapi.yaml`](../openapi.yaml) を正とする。
+パス・HTTP メソッド・ページネーション・誤り語彙は F006 の [`openapi.yaml`](../openapi.yaml) を正とする。SQLite 表は F007 で DESIGN.md 6.1 に固定した。
 
 ---
 
