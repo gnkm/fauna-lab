@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const useSystemChrome = process.env.CI !== "true";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -11,7 +13,15 @@ export default defineConfig({
     locale: "ja-JP",
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        ...(useSystemChrome ? { channel: "chrome" as const } : {}),
+      },
+    },
+  ],
   webServer: {
     command: "python3 scripts/e2e_web_server.py",
     url: "http://127.0.0.1:4173/",
