@@ -38,7 +38,7 @@ Cursor Cloud Agents 向けの作業ルール。アプリ固有のルールはプ
   - フロント: TypeScript / Vite / React / pnpm
   - 実行: ローカルと提出は **Podman**。Cursor Cloud Agent では同一の OCI 定義（`compose.yaml` と `Containerfile` / リポジトリ直下の `Dockerfile`）を **Docker** で動かす。差分はコマンド名だけ。アプリ用の Cloud 専用イメージ定義は作らない。
 - Cloud VM 自体は `.cursor/Dockerfile`（Python 3.12 / Node 22 / Docker CE）。アプリの `Containerfile` とは役割を分ける。`.cursor/environment.json` がこれを `build.dockerfile` から参照する。
-- `install`（セットアップ、ネット可、冪等）: `pnpm install` と `uv sync --directory backend --frozen`（F005 と同じ）、続けて `docker compose build`。デーモン起動を待ってから build する。
+- `install`（セットアップ、ネット可、冪等）: `pnpm install --frozen-lockfile` と `uv sync --directory backend --frozen`（CI / Containerfile と同じ固定）、続けて `docker compose build`。デーモン起動を待ってから build する。
 - `start`: `sudo service docker start` のみ。アプリ本体は置かない。
 - `terminals`: `docker compose up --pull never`（提出の `podman compose up --pull never` に相当）。
 - `ports`: **8000**（コンテナ内待受。ホスト公開の既定も 8000）。

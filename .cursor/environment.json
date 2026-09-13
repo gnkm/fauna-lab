@@ -2,7 +2,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "install": "set -eu; sudo service docker start; n=0; until sudo docker info >/dev/null 2>&1; do n=$((n+1)); [ \"$n\" -le 30 ] || exit 1; sleep 1; done; pnpm install; uv sync --directory backend --frozen; sudo docker compose build",
+  "install": "set -eu; sudo service docker start; n=0; until sudo docker info >/dev/null 2>&1; do n=$((n+1)); [ \"$n\" -le 30 ] || exit 1; sleep 1; done; pnpm install --frozen-lockfile; uv sync --directory backend --frozen; sudo docker compose build",
   "start": "sudo service docker start",
   "terminals": [
     {
