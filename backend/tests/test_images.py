@@ -23,7 +23,7 @@ from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
 from faunalab.domain.images import MAX_IMAGE_BYTES, THUMB_LONG_EDGE
-from faunalab.persist.store import DB_FILENAME
+from faunalab.persist.store import DB_FILENAME, Store
 from faunalab.settings import Settings
 from PIL import Image
 
@@ -401,6 +401,32 @@ def test_delete_removes_suggestion(client: TestClient, settings: Settings) -> No
     state = client.get("/api/_state").json()
     assert state["images"] == []
     assert state["models"][0]["version"] == 1
+
+
+def test_upload_writes_files_before_publishing_ref(
+    client: TestClient, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inserted = {"done": False}
+    real_insert = Store.insert_image
+
+    def insert(self: Store, **kwargs: Any) -> None:
+        inserted["done"] = True
+        real_insert(self, **kwargs)
+
+    def write(root: Path, relative: str, data: bytes) -> Path:
+        assert inserted["done"] is False
+        from faunalab.persist.files import write_bytes as real_write
+
+        return real_write(root, relative, data)
+
+    monkeypatch.setattr("faunalab.persist.store.Store.insert_image", insert)
+    monkeypatch.setattr("faunalab.api.images.write_bytes", write)
+    uploaded = _upload(client, [("order.jpg", _jpeg(color=(9, 8, 7)), "image/jpeg")])
+    assert uploaded.status_code == 200
+    assert uploaded.json()["items"][0]["ok"] is True
+    assert inserted["done"] is True
+    assert list((settings.data_dir / "images").iterdir())
+    assert list((settings.data_dir / "thumbs").iterdir())
 
 
 def test_duplicate_insert_does_not_remove_winner_files(

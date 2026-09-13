@@ -132,7 +132,14 @@ def _register_one(store: Store, filename: str, data: bytes) -> dict[str, Any]:
     thumb_rel = thumb_relpath(digest)
     ref = str(uuid.uuid4())
     created_at = utc_now_z()
+    written: list[str] = []
     try:
+        # ファイルを先に置く。ref は挿入後にだけ見えるので、並行削除が
+        # 空のパスを 204 にしたあとで本処理がファイルを書くことはない。
+        write_bytes(store.data_dir, image_rel, data)
+        written.append(image_rel)
+        write_bytes(store.data_dir, thumb_rel, decoded.thumbnail_jpeg)
+        written.append(thumb_rel)
         store.insert_image(
             ref=ref,
             sha256=digest,
@@ -146,16 +153,10 @@ def _register_one(store: Store, filename: str, data: bytes) -> dict[str, Any]:
     except DuplicateImageError:
         # 共有パスのファイルは勝った側のものなので消さない。
         return _failed_item(filename, "image_duplicate")
-    written: list[str] = []
-    try:
-        write_bytes(store.data_dir, image_rel, data)
-        written.append(image_rel)
-        write_bytes(store.data_dir, thumb_rel, decoded.thumbnail_jpeg)
-        written.append(thumb_rel)
     except Exception:
-        store.delete_image(ref)
-        for relative in written:
-            _remove_stored_file(store, relative)
+        if not store.sha256_exists(digest):
+            for relative in written:
+                _remove_stored_file(store, relative)
         raise
     return _ok_item(filename, ref)
 
