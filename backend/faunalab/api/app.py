@@ -15,12 +15,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from faunalab.api.errors import AppError, internal_error_response, problem_response
 from faunalab.api.images import router as images_router
+from faunalab.api.inferences import router as inferences_router
 from faunalab.api.labels import router as labels_router
 from faunalab.api.sample import router as sample_router
 from faunalab.api.splits import router as splits_router
 from faunalab.api.state import router as state_router
 from faunalab.api.stats import router as stats_router
 from faunalab.ml.baseline import register_baseline_model
+from faunalab.ml.runtime import try_load_baseline_runtime
 from faunalab.persist.store import Store
 from faunalab.settings import Settings, get_settings
 
@@ -37,7 +39,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         store = Store(resolved.data_dir)
         store.initialize()
         inspection = register_baseline_model(store, resolved.assets_dir)
+        runtime = None
+        if inspection.ok:
+            runtime = try_load_baseline_runtime(
+                inspection.model_path, inspection.class_map
+            )
         _app.state.baseline = inspection
+        _app.state.baseline_runtime = runtime
         _app.state.store = store
         try:
             yield
@@ -96,6 +104,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(splits_router)
     app.include_router(stats_router)
     app.include_router(sample_router)
+    app.include_router(inferences_router)
     dist = resolved.web_dist_dir
     if dist.is_dir():
         app.mount("/", StaticFiles(directory=dist, html=True), name="ui")
