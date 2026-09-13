@@ -17,6 +17,7 @@
 | iniconfig         | 2.3.0     | MIT                                  |
 | nodeenv           | 1.10.0    | BSD License                          |
 | packaging         | 26.3      | Apache-2.0 OR BSD-2-Clause           |
+| pillow            | 12.3.0    | MIT-CMU                              |
 | pluggy            | 1.6.0     | MIT License                          |
 | pydantic          | 2.13.5    | MIT                                  |
 | pydantic-settings | 2.15.0    | MIT                                  |
@@ -25,6 +26,7 @@
 | pytest            | 9.1.1     | MIT                                  |
 | pytest-cov        | 7.1.0     | MIT                                  |
 | python-dotenv     | 1.2.3     | BSD-3-Clause                         |
+| python-multipart  | 0.0.32    | Apache-2.0                           |
 | ruff              | 0.16.7    | MIT                                  |
 | starlette         | 1.6.0     | BSD-3-Clause                         |
 | typing-inspection | 0.4.4     | MIT                                  |

@@ -5,7 +5,9 @@ description = "FaunaLab HTTP API and training worker"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
+    "pillow>=12.3.0",
     "pydantic-settings>=2.6",
+    "python-multipart>=0.0.32",
     "uvicorn[standard]>=0.32",
 ]
 

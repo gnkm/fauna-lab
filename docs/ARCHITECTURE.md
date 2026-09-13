@@ -134,7 +134,7 @@ REQ-CON-003 は、依存ライブラリを OSI 承認のオープンソースラ
 ### 4.1 判定手順
 
 1. 依存を追加する Issue / PR で、パッケージ名、版、SPDX 識別子を書く。
-2. SPDX が OSI 承認（MIT、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、PSF-2.0、MPL-2.0、Unlicense、BlueOak-1.0.0、HPND 等）であることを確認する。
+2. SPDX が OSI 承認（MIT、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、PSF-2.0、MPL-2.0、Unlicense、BlueOak-1.0.0、HPND、MIT-CMU 等）であることを確認する。
 3. メタデータが空または「Custom」の場合は、配布されている LICENSE 本文を読み、OSI 承認との対応が取れなければ採用しない。
 4. セットアップ段階（ネットワーク可）で `pnpm export-licenses`（`scripts/export_licenses.py`）を実行し、`docs/dependency-licenses-python.md` と `docs/dependency-licenses-web.txt` をリポジトリに残す。実行段階ではライセンス取得のためにネットへ出ない。
 5. ベースライン重みとサンプル画像のライセンスは配布資産の記載を正とする（`MANIFEST.json` のモデルは BSD-3-Clause）。`assets/` は改変しない。
