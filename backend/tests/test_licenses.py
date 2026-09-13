@@ -41,6 +41,7 @@ LICENSE_ALIASES = {
     "mozilla public license 2.0": "MPL-2.0",
     "python software foundation license": "PSF-2.0",
     "the unlicense": "Unlicense",
+    "3-clause bsd license": "BSD-3-Clause",
 }
 
 DENIED_SUBSTRINGS = ("gpl", "agpl", "sspl", "commons clause")
