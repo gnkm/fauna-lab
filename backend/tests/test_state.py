@@ -312,7 +312,7 @@ _TABLE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _logical_db_snapshot(db_path: Path) -> dict[str, Any]:
-    """Compare row contents, not WAL/SHM file names or sizes."""
+    """WAL/SHM ではなく表内容・版・スキーマを比較する。"""
     conn = sqlite3.connect(db_path)
     try:
         conn.execute("PRAGMA query_only = ON")
