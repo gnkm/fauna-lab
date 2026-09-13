@@ -27,10 +27,97 @@ from faunalab.domain.models import register_trained_model
 from faunalab.persist.store import DB_FILENAME, Store
 from faunalab.settings import Settings, get_settings
 
-from test_metrics import ANNEX_EXPECTED, assert_metrics_close
-
 REPO_ASSETS = Path(__file__).resolve().parents[2] / "assets"
 FIXTURES = REPO_ASSETS / "fixtures"
+METRICS_TOLERANCE = 0.0001
+ANNEX_EXPECTED: dict[str, Any] = {
+    "accuracy": 0.7778,
+    "per_class": {
+        "samoyed": {
+            "precision": 0.8889,
+            "recall": 1.0,
+            "f1": 0.9412,
+            "support": 8,
+        },
+        "great_pyrenees": {
+            "precision": 1.0,
+            "recall": 0.8571,
+            "f1": 0.9231,
+            "support": 7,
+        },
+        "boxer": {
+            "precision": 0.5455,
+            "recall": 1.0,
+            "f1": 0.7059,
+            "support": 6,
+        },
+        "american_bulldog": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 5,
+        },
+        "chihuahua": {
+            "precision": 0.8,
+            "recall": 1.0,
+            "f1": 0.8889,
+            "support": 4,
+        },
+        "miniature_pinscher": {
+            "precision": 1.0,
+            "recall": 0.6667,
+            "f1": 0.8,
+            "support": 3,
+        },
+        "pomeranian": {
+            "precision": 0.6667,
+            "recall": 1.0,
+            "f1": 0.8,
+            "support": 2,
+        },
+        "havanese": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 1,
+        },
+    },
+    "confusion_matrix": {
+        "labels": list(CLASS_IDS),
+        "matrix": [
+            [8, 0, 0, 0, 0, 0, 0, 0],
+            [1, 6, 0, 0, 0, 0, 0, 0],
+            [0, 0, 6, 0, 0, 0, 0, 0],
+            [0, 0, 5, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 4, 0, 0, 0],
+            [0, 0, 0, 0, 1, 2, 0, 0],
+            [0, 0, 0, 0, 0, 0, 2, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+        ],
+    },
+}
+
+
+def assert_metrics_close(
+    actual: dict[str, Any],
+    expected: dict[str, Any],
+    *,
+    tolerance: float = METRICS_TOLERANCE,
+) -> None:
+    assert abs(float(actual["accuracy"]) - float(expected["accuracy"])) <= tolerance
+    actual_per = actual["per_class"]
+    expected_per = expected["per_class"]
+    assert set(actual_per) == set(CLASS_IDS)
+    assert list(actual["confusion_matrix"]["labels"]) == list(CLASS_IDS)
+    for class_id in CLASS_IDS:
+        got = actual_per[class_id]
+        exp = expected_per[class_id]
+        assert got["support"] == exp["support"]
+        for key in ("precision", "recall", "f1"):
+            assert abs(float(got[key]) - float(exp[key])) <= tolerance, class_id
+    assert (
+        actual["confusion_matrix"]["matrix"] == expected["confusion_matrix"]["matrix"]
+    )
 
 
 def _settings(tmp_path: Path, assets_dir: Path) -> Settings:
