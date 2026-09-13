@@ -10,14 +10,19 @@ from faunalab.ml.baseline import (
     register_baseline_model,
 )
 from faunalab.ml.fold import FoldResult, fold_logits, softmax
+from faunalab.ml.metrics import compute_metrics
+from faunalab.ml.predict import load_onnx_session, predict_class_ids
 from faunalab.ml.preprocess import preprocess_batch, preprocess_image
 
 __all__ = [
     "BaselineInspection",
     "FoldResult",
+    "compute_metrics",
     "fold_logits",
     "inspect_baseline_assets",
     "load_class_map",
+    "load_onnx_session",
+    "predict_class_ids",
     "preprocess_batch",
     "preprocess_image",
     "register_baseline_model",

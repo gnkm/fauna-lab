@@ -22,6 +22,11 @@ LOGGER = logging.getLogger("faunalab.persist")
 DATA_SUBDIRS: tuple[str, ...] = ("images", "thumbs", "models", "jobs")
 DB_FILENAME = "db.sqlite3"
 
+_MODEL_SELECT = """
+SELECT ref, version, builtin, active, metrics_json, artifact_dir, created_at
+FROM models
+"""
+
 _IMAGE_SELECT = """
 SELECT
     i.ref AS ref,
@@ -96,6 +101,7 @@ class ModelRow:
     active: bool
     metrics: Any
     created_at: str
+    artifact_dir: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +144,7 @@ class Store:
             self._conn = conn
             with conn:
                 conn.executescript(SCHEMA_SQL)
+                self._ensure_model_deleted_column(conn)
                 current = conn.execute("PRAGMA user_version").fetchone()
                 version = int(current[0]) if current is not None else 0
                 if version > SCHEMA_VERSION:
@@ -188,6 +195,13 @@ class Store:
             WHERE status = 'RUNNING'
             """
         )
+
+    def _ensure_model_deleted_column(self, conn: sqlite3.Connection) -> None:
+        columns = {str(row[1]) for row in conn.execute("PRAGMA table_info(models)")}
+        if "deleted" not in columns:
+            conn.execute(
+                "ALTER TABLE models ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0"
+            )
 
     def list_classes(self) -> list[ClassRow]:
         with self._locked() as conn:
@@ -399,6 +413,14 @@ class Store:
             ).fetchall()
         return [(str(row["ref"]), str(row["class_id"])) for row in rows]
 
+    def list_labeled_test_images(self) -> list[ImageRow]:
+        with self._locked() as conn:
+            rows = conn.execute(
+                f"{_IMAGE_SELECT} WHERE i.split = 'test' AND l.class_id IS NOT NULL "
+                "ORDER BY i.created_at ASC, i.ref ASC"
+            ).fetchall()
+        return [_image_row(row) for row in rows]
+
     def apply_split_assignments(self, assignments: dict[str, str]) -> tuple[int, int]:
         with self._locked() as conn:
             with conn:
@@ -497,23 +519,46 @@ class Store:
     def list_models(self) -> list[ModelRow]:
         with self._locked() as conn:
             rows = conn.execute(
-                """
-                SELECT ref, version, builtin, active, metrics_json, created_at
-                FROM models
-                ORDER BY version ASC
-                """
+                f"{_MODEL_SELECT} WHERE deleted = 0 ORDER BY version ASC"
             ).fetchall()
         return [_model_row(row) for row in rows]
+
+    def list_models_page(
+        self, *, limit: int, offset: int
+    ) -> tuple[list[ModelRow], int]:
+        with self._locked() as conn:
+            total = int(
+                conn.execute(
+                    "SELECT COUNT(*) AS n FROM models WHERE deleted = 0"
+                ).fetchone()["n"]
+            )
+            rows = conn.execute(
+                f"{_MODEL_SELECT} WHERE deleted = 0 "
+                "ORDER BY version DESC, ref DESC LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+        return [_model_row(row) for row in rows], total
+
+    def get_model(self, ref: str) -> ModelRow | None:
+        with self._locked() as conn:
+            row = conn.execute(
+                f"{_MODEL_SELECT} WHERE ref = ? AND deleted = 0",
+                (ref,),
+            ).fetchone()
+        return None if row is None else _model_row(row)
 
     def get_model_by_version(self, version: int) -> ModelRow | None:
         with self._locked() as conn:
             row = conn.execute(
-                """
-                SELECT ref, version, builtin, active, metrics_json, created_at
-                FROM models
-                WHERE version = ?
-                """,
+                f"{_MODEL_SELECT} WHERE version = ? AND deleted = 0",
                 (version,),
+            ).fetchone()
+        return None if row is None else _model_row(row)
+
+    def get_active_model(self) -> ModelRow | None:
+        with self._locked() as conn:
+            row = conn.execute(
+                f"{_MODEL_SELECT} WHERE active = 1 AND deleted = 0 LIMIT 1"
             ).fetchone()
         return None if row is None else _model_row(row)
 
@@ -528,9 +573,9 @@ class Store:
                         """
                         INSERT INTO models (
                             ref, version, builtin, active,
-                            metrics_json, artifact_dir, created_at
+                            metrics_json, artifact_dir, created_at, deleted
                         )
-                        VALUES (?, 0, 1, 0, NULL, NULL, ?)
+                        VALUES (?, 0, 1, 0, NULL, NULL, ?, 0)
                         """,
                         (ref, created_at),
                     )
@@ -548,14 +593,108 @@ class Store:
         with self._locked() as conn:
             with conn:
                 row = conn.execute(
-                    "SELECT 1 FROM models WHERE active = 1 LIMIT 1"
+                    "SELECT 1 FROM models WHERE active = 1 AND deleted = 0 LIMIT 1"
                 ).fetchone()
                 if row is not None:
                     return
                 conn.execute(
-                    "UPDATE models SET active = 1 WHERE version = ?",
+                    "UPDATE models SET active = 1 WHERE version = ? AND deleted = 0",
                     (version,),
                 )
+
+    def activate_model(self, ref: str) -> ModelRow | None:
+        with self._locked() as conn:
+            with conn:
+                row = conn.execute(
+                    f"{_MODEL_SELECT} WHERE ref = ? AND deleted = 0",
+                    (ref,),
+                ).fetchone()
+                if row is None:
+                    return None
+                conn.execute("UPDATE models SET active = 0 WHERE active = 1")
+                conn.execute(
+                    "UPDATE models SET active = 1 WHERE ref = ? AND deleted = 0",
+                    (ref,),
+                )
+        return self.get_model(ref)
+
+    def insert_trained_model(
+        self,
+        *,
+        ref: str,
+        created_at: str,
+        activate: bool,
+        metrics: Any = None,
+    ) -> ModelRow:
+        metrics_json = None if metrics is None else json.dumps(metrics)
+        with self._locked() as conn:
+            with conn:
+                max_row = conn.execute(
+                    "SELECT MAX(version) AS m FROM models"
+                ).fetchone()
+                raw_max = max_row["m"] if max_row is not None else None
+                version = max(1, (0 if raw_max is None else int(raw_max)) + 1)
+                artifact_dir = f"models/{version}"
+                if activate:
+                    conn.execute("UPDATE models SET active = 0 WHERE active = 1")
+                conn.execute(
+                    """
+                    INSERT INTO models (
+                        ref, version, builtin, active,
+                        metrics_json, artifact_dir, created_at, deleted
+                    )
+                    VALUES (?, ?, 0, ?, ?, ?, ?, 0)
+                    """,
+                    (
+                        ref,
+                        version,
+                        1 if activate else 0,
+                        metrics_json,
+                        artifact_dir,
+                        created_at,
+                    ),
+                )
+        created = self.get_model(ref)
+        if created is None:
+            raise RuntimeError("failed to persist trained model")
+        return created
+
+    def update_metrics(self, ref: str, metrics: Any) -> ModelRow | None:
+        with self._locked() as conn:
+            with conn:
+                cursor = conn.execute(
+                    """
+                    UPDATE models
+                    SET metrics_json = ?
+                    WHERE ref = ? AND deleted = 0
+                    """,
+                    (json.dumps(metrics), ref),
+                )
+                if cursor.rowcount == 0:
+                    return None
+        return self.get_model(ref)
+
+    def mark_model_deleted(self, ref: str) -> ModelRow | None:
+        existing = self.get_model(ref)
+        if existing is None:
+            return None
+        with self._locked() as conn:
+            with conn:
+                conn.execute(
+                    """
+                    UPDATE models
+                    SET deleted = 1, active = 0
+                    WHERE ref = ? AND deleted = 0 AND builtin = 0 AND active = 0
+                    """,
+                    (ref,),
+                )
+                still = conn.execute(
+                    f"{_MODEL_SELECT} WHERE ref = ? AND deleted = 0",
+                    (ref,),
+                ).fetchone()
+        if still is not None:
+            return None
+        return existing
 
     def unpublish_builtin(self) -> None:
         """Drop version 0 when unused; otherwise deactivate it."""
@@ -622,6 +761,7 @@ def _model_row(row: sqlite3.Row) -> ModelRow:
         active=bool(row["active"]),
         metrics=_decode_json(row["metrics_json"]),
         created_at=row["created_at"],
+        artifact_dir=row["artifact_dir"],
     )
 
 

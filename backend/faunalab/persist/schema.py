@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS models (
     metrics_json TEXT,
     artifact_dir TEXT,
     created_at TEXT NOT NULL,
+    deleted INTEGER NOT NULL DEFAULT 0 CHECK (deleted IN (0, 1)),
     CHECK (
         (builtin = 1 AND version = 0)
         OR (builtin = 0 AND version <> 0)
