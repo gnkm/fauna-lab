@@ -82,7 +82,7 @@ pnpm export-licenses
 
 ### サンプル投入
 
-配布資産 `assets/sample/manifest.json` があるとき、確定ラベル（由来 `human`）付きで登録できます。
+配布資産 `assets/sample/manifest.json` があるとき、確定ラベル（由来 `human`）付きで登録できます。Web UI の概況画面にある「サンプルデータを投入」から実行できます。API から行う場合:
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/api/sample/import
@@ -90,7 +90,13 @@ curl -sS -X POST http://127.0.0.1:8000/api/sample/import
 
 `assets/sample/` が無い、またはマニフェスト／画像が読めない場合は HTTP 422（`sample_unavailable`）で失敗します。起動自体は継続します（REQ-F-SYS-003）。
 
-確定ラベルの付与・一括付与・層化分割・件数概況:
+画像の登録・ラベル・分割は Web UI からも行えます。
+
+- 画像: `http://127.0.0.1:8000/images`（複数 JPEG/PNG、一部失敗は件別に表示）
+- アノテーション: `http://127.0.0.1:8000/annotate`（1 枚付与と一括付与。候補操作は未接続）
+- 分割: `http://127.0.0.1:8000/splits`（比率とシード、件数の表示）
+
+確定ラベルの付与・一括付与・層化分割・件数概況を API で行う場合:
 
 ```bash
 curl -sS -X PUT http://127.0.0.1:8000/api/images/<ref>/label \
