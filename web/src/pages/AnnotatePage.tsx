@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { errorMessage } from "../api/http";
 import { fetchImages } from "../api/images";
 import { bulkPutLabels, deleteImageLabel, putImageLabel } from "../api/labels";
@@ -14,6 +14,8 @@ import {
   EMPTY_FILTERS,
   type ImageFilters,
   type ImageItem,
+  matchesFilters,
+  withLabel,
 } from "../domain/images";
 import { Link } from "../router/Link";
 import { useRouter } from "../router/Router";
@@ -35,6 +37,7 @@ export function AnnotatePage() {
   const [focusIndex, setFocusIndex] = useState(0);
   const [classId, setClassId] = useState<ClassId | "">("");
   const [notice, setNotice] = useState<string | null>(null);
+  const [canRetryReload, setCanRetryReload] = useState(false);
 
   const busy = loading || pending;
 
@@ -48,6 +51,7 @@ export function AnnotatePage() {
         setSelected(new Set());
         setFocusIndex(0);
         setError(null);
+        setCanRetryReload(false);
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) {
@@ -67,6 +71,8 @@ export function AnnotatePage() {
 
   const focused = images[focusIndex] ?? null;
   const selectedRefs = useMemo(() => Array.from(selected), [selected]);
+  const imagesRef = useRef(images);
+  imagesRef.current = images;
 
   const reloadList = useCallback(async () => {
     const page = await fetchImages(filters, PAGE_SIZE, 0);
@@ -76,6 +82,58 @@ export function AnnotatePage() {
     setFocusIndex(0);
   }, [filters]);
 
+  const applyLocal = useCallback(
+    (refs: string[], label: ImageItem["label"]) => {
+      const refSet = new Set(refs);
+      const current = imagesRef.current;
+      const next = current
+        .map((item) => (refSet.has(item.ref) ? withLabel(item, label) : item))
+        .filter((item) => matchesFilters(item, filters));
+      setImages(next);
+      setTotal((prev) => Math.max(0, prev - (current.length - next.length)));
+      setSelected(new Set());
+      setFocusIndex(0);
+    },
+    [filters],
+  );
+
+  const afterSave = useCallback(
+    async (notice: string, fallback?: () => void) => {
+      setNotice(notice);
+      try {
+        await reloadList();
+        setError(null);
+        setCanRetryReload(false);
+      } catch (reason: unknown) {
+        fallback?.();
+        setCanRetryReload(true);
+        setError(
+          `保存は完了しましたが、一覧の再読み込みに失敗しました。${errorMessage(reason)}`,
+        );
+      }
+    },
+    [reloadList],
+  );
+
+  const onRetryReload = () => {
+    if (pending) {
+      return;
+    }
+    setPending(true);
+    reloadList()
+      .then(() => {
+        setError(null);
+        setCanRetryReload(false);
+      })
+      .catch((reason: unknown) => {
+        setCanRetryReload(true);
+        setError(`一覧の再読み込みに失敗しました。${errorMessage(reason)}`);
+      })
+      .finally(() => {
+        setPending(false);
+      });
+  };
+
   const onAssignOne = useCallback(
     (ref: string, nextClass: ClassId) => {
       if (pending) {
@@ -83,10 +141,10 @@ export function AnnotatePage() {
       }
       setPending(true);
       putImageLabel(ref, nextClass)
-        .then(async () => {
-          await reloadList();
-          setNotice("確定ラベルを付けました。");
-          setError(null);
+        .then(async (label) => {
+          await afterSave("確定ラベルを付けました。", () => {
+            applyLocal([ref], label);
+          });
         })
         .catch((reason: unknown) => {
           setError(errorMessage(reason));
@@ -95,19 +153,21 @@ export function AnnotatePage() {
           setPending(false);
         });
     },
-    [pending, reloadList],
+    [afterSave, applyLocal, pending],
   );
 
   const onBulk = () => {
     if (pending || classId === "" || selectedRefs.length === 0) {
       return;
     }
+    const refs = selectedRefs;
+    const nextClass = classId;
     setPending(true);
-    bulkPutLabels(selectedRefs, classId)
+    bulkPutLabels(refs, nextClass)
       .then(async (count) => {
-        await reloadList();
-        setNotice(`確定ラベルを ${String(count)} 件付けました。`);
-        setError(null);
+        await afterSave(`確定ラベルを ${String(count)} 件付けました。`, () => {
+          applyLocal(refs, { class_id: nextClass, source: "human" });
+        });
       })
       .catch((reason: unknown) => {
         setError(errorMessage(reason));
@@ -129,26 +189,49 @@ export function AnnotatePage() {
       }),
     )
       .then(async (results) => {
-        const succeeded = results.filter(
-          (result) => result.status === "fulfilled",
-        ).length;
-        const failedCount = results.length - succeeded;
-        await reloadList();
-        if (failedCount > 0) {
-          setError(
-            `${String(failedCount)} 件のラベル解除に失敗しました。一覧をサーバの状態に合わせました。`,
-          );
-          if (succeeded > 0) {
-            setNotice(`確定ラベルを ${String(succeeded)} 件解除しました。`);
+        const succeeded = results.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : [],
+        );
+        const failedCount = results.length - succeeded.length;
+        const notice =
+          failedCount > 0 && succeeded.length > 0
+            ? `確定ラベルを ${String(succeeded.length)} 件解除しました。`
+            : failedCount === 0
+              ? "選択したラベルを解除しました。"
+              : null;
+        try {
+          await reloadList();
+          setCanRetryReload(false);
+          if (failedCount > 0) {
+            setError(
+              `${String(failedCount)} 件のラベル解除に失敗しました。一覧をサーバの状態に合わせました。`,
+            );
+          } else {
+            setError(null);
           }
-          return;
+          if (notice !== null) {
+            setNotice(notice);
+          }
+        } catch (reason: unknown) {
+          if (succeeded.length > 0) {
+            applyLocal(succeeded, null);
+          }
+          if (notice !== null) {
+            setNotice(notice);
+          }
+          setCanRetryReload(true);
+          const reloadMsg = `一覧の再読み込みに失敗しました。${errorMessage(reason)}`;
+          setError(
+            succeeded.length > 0
+              ? `保存は完了しましたが、${reloadMsg}`
+              : failedCount > 0
+                ? `${String(failedCount)} 件のラベル解除に失敗し、${reloadMsg}`
+                : reloadMsg,
+          );
         }
-        setNotice("選択したラベルを解除しました。");
-        setError(null);
       })
       .catch((reason: unknown) => {
         setError(errorMessage(reason));
-        return reloadList();
       })
       .finally(() => {
         setPending(false);
@@ -218,10 +301,27 @@ export function AnnotatePage() {
     <article className="page page--wide" data-testid="annotate-page">
       <h1>アノテーション</h1>
       <p className="lede">
-        サムネイルに確定ラベルを付けます。確定と候補は色の違うバッジで区別します。付与後は再読み込みせずに表示を更新します。
+        サムネイルに確定ラベルを付けます。確定と候補は色の違うバッジで区別します。
       </p>
       {error !== null ? (
-        <ErrorBanner message={error} onDismiss={() => setError(null)} />
+        <ErrorBanner
+          message={error}
+          onDismiss={() => {
+            setError(null);
+          }}
+        />
+      ) : null}
+      {canRetryReload ? (
+        <p>
+          <button
+            type="button"
+            onClick={onRetryReload}
+            disabled={pending}
+            data-testid="retry-reload"
+          >
+            一覧を再読み込み
+          </button>
+        </p>
       ) : null}
       {notice !== null ? (
         <p className="banner banner--info" role="status">
