@@ -503,17 +503,78 @@ class Store:
                 ORDER BY version ASC
                 """
             ).fetchall()
-        return [
-            ModelRow(
-                ref=row["ref"],
-                version=int(row["version"]),
-                builtin=bool(row["builtin"]),
-                active=bool(row["active"]),
-                metrics=_decode_json(row["metrics_json"]),
-                created_at=row["created_at"],
-            )
-            for row in rows
-        ]
+        return [_model_row(row) for row in rows]
+
+    def get_model_by_version(self, version: int) -> ModelRow | None:
+        with self._locked() as conn:
+            row = conn.execute(
+                """
+                SELECT ref, version, builtin, active, metrics_json, created_at
+                FROM models
+                WHERE version = ?
+                """,
+                (version,),
+            ).fetchone()
+        return None if row is None else _model_row(row)
+
+    def ensure_builtin_model(self, *, ref: str, created_at: str) -> ModelRow:
+        existing = self.get_model_by_version(0)
+        if existing is not None:
+            return existing
+        with self._locked() as conn:
+            try:
+                with conn:
+                    conn.execute(
+                        """
+                        INSERT INTO models (
+                            ref, version, builtin, active,
+                            metrics_json, artifact_dir, created_at
+                        )
+                        VALUES (?, 0, 1, 0, NULL, NULL, ?)
+                        """,
+                        (ref, created_at),
+                    )
+            except sqlite3.IntegrityError:
+                existing = self.get_model_by_version(0)
+                if existing is not None:
+                    return existing
+                raise
+        created = self.get_model_by_version(0)
+        if created is None:
+            raise RuntimeError("failed to persist builtin model version 0")
+        return created
+
+    def activate_if_none_active(self, version: int) -> None:
+        with self._locked() as conn:
+            with conn:
+                row = conn.execute(
+                    "SELECT 1 FROM models WHERE active = 1 LIMIT 1"
+                ).fetchone()
+                if row is not None:
+                    return
+                conn.execute(
+                    "UPDATE models SET active = 1 WHERE version = ?",
+                    (version,),
+                )
+
+    def unpublish_builtin(self) -> None:
+        """Drop version 0 when unused; otherwise deactivate it."""
+
+        with self._locked() as conn:
+            try:
+                with conn:
+                    conn.execute(
+                        "DELETE FROM models WHERE version = 0 AND builtin = 1"
+                    )
+            except sqlite3.IntegrityError:
+                with conn:
+                    conn.execute(
+                        """
+                        UPDATE models
+                        SET active = 0
+                        WHERE version = 0 AND builtin = 1
+                        """
+                    )
 
     def list_inferences(self) -> list[InferenceRow]:
         with self._locked() as conn:
@@ -551,6 +612,17 @@ class Store:
             )
             for row in rows
         ]
+
+
+def _model_row(row: sqlite3.Row) -> ModelRow:
+    return ModelRow(
+        ref=row["ref"],
+        version=int(row["version"]),
+        builtin=bool(row["builtin"]),
+        active=bool(row["active"]),
+        metrics=_decode_json(row["metrics_json"]),
+        created_at=row["created_at"],
+    )
 
 
 def _image_row(row: sqlite3.Row) -> ImageRow:

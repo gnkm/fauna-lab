@@ -20,6 +20,7 @@ from faunalab.api.sample import router as sample_router
 from faunalab.api.splits import router as splits_router
 from faunalab.api.state import router as state_router
 from faunalab.api.stats import router as stats_router
+from faunalab.ml.baseline import register_baseline_model
 from faunalab.persist.store import Store
 from faunalab.settings import Settings, get_settings
 
@@ -35,10 +36,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         store = Store(resolved.data_dir)
         store.initialize()
-        if not resolved.assets_dir.is_dir():
-            LOGGER.warning(
-                "assets directory is missing; continuing without baseline (REQ-CON-007)"
-            )
+        inspection = register_baseline_model(store, resolved.assets_dir)
+        _app.state.baseline = inspection
         _app.state.store = store
         try:
             yield

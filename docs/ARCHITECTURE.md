@@ -96,7 +96,7 @@ flowchart LR
 | SQLite | プロセス追加なし。**サービス停止後に**データディレクトリ全体を複製すれば復元できる（REQ-ATT-POR-001、手順は 6.4）。想定規模は画像 5,000・モデル 50 | PostgreSQL はセットアップと実行の分離、単一コマンド起動を重くする |
 | ONNX Runtime | 配布資産が ONNX（opset 13、入力 `[N,3,224,224]`、出力 `logits` と `embedding`） | 形式変換せずにベースラインを読める |
 | PyTorch CPU | 学習の実装。ベースライン利用時は embedding（1280 次元）を入力とする分類ヘッドのみを訓練する | フルバックボーン学習は 4 論理 CPU・30 分制約（REQ-PERF-004）に対して過剰 |
-| torchvision | 共通前処理（短辺 256・中央 224・ImageNet 正規化）をベースライン出典と同じ実装で行う | 期待値差 0.02 以内（REQ-F-BASE-010）をコードの独自リサイズに頼らない |
+| torchvision | 学習ワーカ用。API の共通前処理は Pillow + NumPy で同一手順を実装する | API プロセスに PyTorch を載せない（REQ-PERF-006）。期待値差 0.02 以内はフィクスチャで担保する |
 | TypeScript + Vite | 既存の pnpm / Biome と整合。SPA として API に状態を集約する | Next.js の SSR は権威状態をサーバに置く方針と利益が薄く、実行時 Node が増える |
 | React | 画面群（画像、アノテーション、学習、モデル、推論）と URL 復元（REQ-UI-002） | ルーティングとコンポーネント分割が後続 Issue で衝突しにくい |
 | uv | `uv.lock` を lefthook の osv-scanner 対象が既に想定している。セットアップ段階で依存を閉じる | pip 素の requirements より再現性が高い |
