@@ -25,6 +25,7 @@ ERROR_STATUS: dict[str, int] = {
     "sample_unavailable": 422,
     "no_active_model": 422,
     "baseline_unavailable": 422,
+    "suggestion_not_found": 404,
     "internal_error": 500,
 }
 
@@ -65,7 +66,14 @@ def image_not_found() -> AppError:
 def no_active_model() -> AppError:
     return error_for_code(
         "no_active_model",
-        "有効モデルが無いため推論を実行できません。",
+        "有効モデルが無いため操作を実行できません。",
+    )
+
+
+def suggestion_not_found() -> AppError:
+    return error_for_code(
+        "suggestion_not_found",
+        "指定した候補ラベルは存在しません。",
     )
 
 

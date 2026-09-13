@@ -21,6 +21,7 @@ from faunalab.api.spa import SpaStaticFiles
 from faunalab.api.splits import router as splits_router
 from faunalab.api.state import router as state_router
 from faunalab.api.stats import router as stats_router
+from faunalab.api.suggestions import router as suggestions_router
 from faunalab.ml.baseline import register_baseline_model
 from faunalab.ml.runtime import try_load_baseline_runtime
 from faunalab.persist.store import Store
@@ -91,9 +92,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def unhandled_exception_handler(
         _request: Request, exc: Exception
     ) -> JSONResponse:
-        if isinstance(
-            exc, (StarletteHTTPException, RequestValidationError, AppError)
-        ):
+        if isinstance(exc, (StarletteHTTPException, RequestValidationError, AppError)):
             raise exc
         LOGGER.exception("unhandled exception")
         return internal_error_response()
@@ -105,6 +104,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(stats_router)
     app.include_router(sample_router)
     app.include_router(inferences_router)
+    app.include_router(suggestions_router)
     dist = resolved.web_dist_dir
     if dist.is_dir():
         app.mount("/", SpaStaticFiles(directory=dist, html=True), name="ui")
