@@ -20,6 +20,7 @@ EOF
     export FAUNALAB_DROP_UID="$uid"
     export FAUNALAB_DROP_GID="$gid"
     exec python -c 'import os, sys
+os.setgroups([])
 os.setgid(int(os.environ["FAUNALAB_DROP_GID"]))
 os.setuid(int(os.environ["FAUNALAB_DROP_UID"]))
 os.execvp(sys.argv[1], sys.argv[1:])
