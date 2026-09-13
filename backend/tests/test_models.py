@@ -385,6 +385,88 @@ def test_ver_data_004_baseline_reeval_matches_annex(
     assert refused.status_code == 409
 
 
+def test_register_does_not_leave_row_when_artifact_dir_fails(
+    assets_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = _app_store(assets_client)
+
+    def boom(_root: Path, _relative: str) -> Path:
+        raise OSError("disk full")
+
+    monkeypatch.setattr("faunalab.persist.store.ensure_dir", boom)
+    with pytest.raises(OSError):
+        register_trained_model(
+            store, ref=str(uuid.uuid4()), created_at="2026-09-13T00:00:00Z"
+        )
+    models = _state(assets_client)["models"]
+    assert len(models) == 1
+    assert models[0]["version"] == 0
+    assert models[0]["active"] is True
+
+
+def test_delete_stays_retryable_if_artifact_removal_fails(
+    assets_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = _app_store(assets_client)
+    v0 = _version_zero(assets_client)["ref"]
+    trained = register_trained_model(
+        store, ref=str(uuid.uuid4()), created_at="2026-09-13T00:00:00Z"
+    )
+    marker = store.data_dir / "models" / "1" / "model.onnx"
+    marker.write_bytes(b"dummy-onnx")
+    assert assets_client.post(f"/api/models/{v0}/activate").status_code == 200
+
+    def boom(_root: Path, _relative: str) -> None:
+        raise OSError("permission denied")
+
+    monkeypatch.setattr("faunalab.domain.models.remove_tree_if_present", boom)
+    failed = assets_client.delete(f"/api/models/{trained.ref}")
+    assert failed.status_code == 500
+    assert assets_client.get(f"/api/models/{trained.ref}").status_code == 200
+    assert marker.is_file()
+    monkeypatch.undo()
+    deleted = assets_client.delete(f"/api/models/{trained.ref}")
+    assert deleted.status_code == 204
+    assert assets_client.get(f"/api/models/{trained.ref}").status_code == 404
+    assert not marker.exists()
+
+
+def test_migrated_deleted_column_rejects_out_of_range(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    data.mkdir()
+    conn = sqlite3.connect(data / DB_FILENAME)
+    conn.executescript(
+        """
+        CREATE TABLE models (
+            id INTEGER PRIMARY KEY,
+            ref TEXT NOT NULL UNIQUE,
+            version INTEGER NOT NULL UNIQUE,
+            builtin INTEGER NOT NULL CHECK (builtin IN (0, 1)),
+            active INTEGER NOT NULL CHECK (active IN (0, 1)),
+            metrics_json TEXT,
+            artifact_dir TEXT,
+            created_at TEXT NOT NULL
+        );
+        INSERT INTO models (ref, version, builtin, active, created_at)
+        VALUES (
+            'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+            0, 1, 1, '2026-01-01T00:00:00Z'
+        );
+        """
+    )
+    conn.execute("PRAGMA user_version = 1")
+    conn.commit()
+    conn.close()
+    store = Store(data)
+    store.initialize()
+    store.close()
+    conn = sqlite3.connect(data / DB_FILENAME)
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("UPDATE models SET deleted = 2")
+        conn.commit()
+    conn.close()
+
+
 def _tiny_jpeg() -> bytes:
     from io import BytesIO
 

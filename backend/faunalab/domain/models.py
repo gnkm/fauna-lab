@@ -8,7 +8,7 @@ from pathlib import Path
 from faunalab.ml.baseline import BaselineInspection
 from faunalab.ml.metrics import Metrics, compute_metrics
 from faunalab.ml.predict import load_onnx_session, predict_class_ids
-from faunalab.persist.files import ensure_dir, remove_tree_if_present, resolve_under
+from faunalab.persist.files import remove_tree_if_present, resolve_under
 from faunalab.persist.store import ImageRow, ModelRow, Store
 
 TRAINED_ONNX_NAME = "model.onnx"
@@ -63,15 +63,11 @@ def register_trained_model(
     `metrics=null` (REQ-F-MDL-002) — do not call `evaluate_model` then.
     """
 
-    active = store.get_active_model()
-    row = store.insert_trained_model(
+    return store.insert_trained_model(
         ref=ref or str(uuid.uuid4()),
         created_at=created_at,
-        activate=should_auto_activate(active),
         metrics=metrics,
     )
-    ensure_dir(store.data_dir, trained_artifact_relpath(row.version))
-    return row
 
 
 def activate_model(store: Store, ref: str) -> ModelRow:
@@ -94,11 +90,11 @@ def delete_model(store: Store, ref: str) -> None:
     if existing.builtin or existing.active:
         raise ModelNotDeletableError(ref)
     artifact_dir = existing.artifact_dir
+    if artifact_dir:
+        remove_tree_if_present(store.data_dir, artifact_dir)
     deleted = store.mark_model_deleted(ref)
     if deleted is None:
         raise ModelNotFoundError(ref)
-    if artifact_dir:
-        remove_tree_if_present(store.data_dir, artifact_dir)
 
 
 def evaluate_model(

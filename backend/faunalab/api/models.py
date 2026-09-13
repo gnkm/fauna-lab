@@ -102,4 +102,9 @@ def remove_model(request: Request, ref: str) -> Response:
             "model_not_deletable",
             "有効モデルまたはベースラインモデルは削除できません。",
         ) from exc
+    except OSError as exc:
+        raise error_for_code(
+            "internal_error",
+            "モデル成果物を除去できません。",
+        ) from exc
     return Response(status_code=204)

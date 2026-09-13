@@ -572,10 +572,10 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超 JPEG でステータスが異�
 8.2 は試験再現のため `_state` の配列を昇順に固定する。プログラムインタフェースは利用者が新しいものを見る用途なので、`GET /api/jobs` と `GET /api/inferences` は `created_at` 降順、同刻は `ref` 降順とする。`GET /api/images` は 8.2 と同じ昇順。`GET /api/models` は版番号降順。いずれも第二キーまで含めて一意（REQ-API-006）。
 
 **I-MDL-001 学習済モデルの登録契約（F014）**
-学習ジョブ（F014）はモデル版を自ら INSERT しない。成功時は `faunalab.domain.models.register_trained_model` を呼ぶ。この関数が版番号（1 から連番、`MAX(version)+1`、削除済も含めて再利用しない）、有効化規則（REQ-F-MDL-004: 有効が無い、または有効が版 0 のときだけ自動有効化）、成果物ディレクトリ `models/{version}/` を担う。指標は呼び出し側が渡さない限り `null`。試験分割が空ならそのまま成功（REQ-F-MDL-002）。空でなければ F014 が `model.onnx` を書いたあと `evaluate_model` を呼ぶ。空のときに `evaluate_model` を呼んではならない（REQ-F-MDL-009 は再評価を失敗させる）。
+学習ジョブ（F014）はモデル版を自ら INSERT しない。成功時は `faunalab.domain.models.register_trained_model` を呼ぶ。この関数が版番号（1 から連番、`MAX(version)+1`、削除済も含めて再利用しない）、有効化規則（REQ-F-MDL-004: 有効が無い、または有効が版 0 のときだけ自動有効化）、成果物ディレクトリ `models/{version}/` を担う。版番号の決定・ディレクトリ作成・自動有効化・INSERT は同一ロック／トランザクションで行い、ディレクトリ作成に失敗したら行を残さない。指標は呼び出し側が渡さない限り `null`。試験分割が空ならそのまま成功（REQ-F-MDL-002）。空でなければ F014 が `model.onnx` を書いたあと `evaluate_model` を呼ぶ。空のときに `evaluate_model` を呼んではならない（REQ-F-MDL-009 は再評価を失敗させる）。
 
 **I-MDL-002 モデル削除は論理削除**
-`DELETE /api/models/{ref}` は行を残し `deleted=1` にする。版番号の UNIQUE が残るので再利用しない。`_state` と GET は `deleted=0` だけを出す。成果物ディレクトリは除去する。`inferences.model_id` の FK は残るので推論履歴の `model_ref` は変わらない（REQ-F-MDL-007）。有効モデルと版 0 は 409 `model_not_deletable`。
+`DELETE /api/models/{ref}` は行を残し `deleted=1` にする。版番号の UNIQUE が残るので再利用しない。`_state` と GET は `deleted=0` だけを出す。成果物ディレクトリを先に除去し、成功してから論理削除する。除去が失敗したらモデルは可視のままなので DELETE を再試行できる。`inferences.model_id` の FK は残るので推論履歴の `model_ref` は変わらない（REQ-F-MDL-007）。有効モデルと版 0 は 409 `model_not_deletable`。
 
 **I-MDL-003 再評価の対象**
 `POST /api/models/{ref}/evaluate` は現在 `split=test` かつ確定ラベルがある画像だけを使う。0 件なら 422 `empty_test_split`。版 0 は配布 ONNX + 畳み込み。学習済は `models/{version}/model.onnx` の 8 クラス logits の argmax（同率は `display_order` が小さい方）。

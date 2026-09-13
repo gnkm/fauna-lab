@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from faunalab.domain.classes import CLASS_IDS, SPLIT_IDS, SYSTEM_CLASSES
+from faunalab.persist.files import ensure_dir, remove_tree_if_present
 from faunalab.persist.schema import SCHEMA_SQL, SCHEMA_VERSION
 
 IN_QUERY_CHUNK = 500
@@ -200,7 +201,8 @@ class Store:
         columns = {str(row[1]) for row in conn.execute("PRAGMA table_info(models)")}
         if "deleted" not in columns:
             conn.execute(
-                "ALTER TABLE models ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0"
+                "ALTER TABLE models ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0 "
+                "CHECK (deleted IN (0, 1))"
             )
 
     def list_classes(self) -> list[ClassRow]:
@@ -623,37 +625,54 @@ class Store:
         *,
         ref: str,
         created_at: str,
-        activate: bool,
         metrics: Any = None,
     ) -> ModelRow:
+        """Allocate the next version, create its directory, then insert.
+
+        Auto-activation (REQ-F-MDL-004) is decided in this same transaction.
+        If the directory cannot be created, no row is written.
+        """
+
         metrics_json = None if metrics is None else json.dumps(metrics)
-        with self._locked() as conn:
-            with conn:
-                max_row = conn.execute(
-                    "SELECT MAX(version) AS m FROM models"
-                ).fetchone()
-                raw_max = max_row["m"] if max_row is not None else None
-                version = max(1, (0 if raw_max is None else int(raw_max)) + 1)
-                artifact_dir = f"models/{version}"
-                if activate:
-                    conn.execute("UPDATE models SET active = 0 WHERE active = 1")
-                conn.execute(
-                    """
-                    INSERT INTO models (
-                        ref, version, builtin, active,
-                        metrics_json, artifact_dir, created_at, deleted
+        created_dir: str | None = None
+        try:
+            with self._locked() as conn:
+                with conn:
+                    max_row = conn.execute(
+                        "SELECT MAX(version) AS m FROM models"
+                    ).fetchone()
+                    raw_max = max_row["m"] if max_row is not None else None
+                    version = max(1, (0 if raw_max is None else int(raw_max)) + 1)
+                    artifact_dir = f"models/{version}"
+                    ensure_dir(self.data_dir, artifact_dir)
+                    created_dir = artifact_dir
+                    active = conn.execute(
+                        f"{_MODEL_SELECT} WHERE active = 1 AND deleted = 0 LIMIT 1"
+                    ).fetchone()
+                    activate = active is None or bool(active["builtin"])
+                    if activate:
+                        conn.execute("UPDATE models SET active = 0 WHERE active = 1")
+                    conn.execute(
+                        """
+                        INSERT INTO models (
+                            ref, version, builtin, active,
+                            metrics_json, artifact_dir, created_at, deleted
+                        )
+                        VALUES (?, ?, 0, ?, ?, ?, ?, 0)
+                        """,
+                        (
+                            ref,
+                            version,
+                            1 if activate else 0,
+                            metrics_json,
+                            artifact_dir,
+                            created_at,
+                        ),
                     )
-                    VALUES (?, ?, 0, ?, ?, ?, ?, 0)
-                    """,
-                    (
-                        ref,
-                        version,
-                        1 if activate else 0,
-                        metrics_json,
-                        artifact_dir,
-                        created_at,
-                    ),
-                )
+        except Exception:
+            if created_dir is not None:
+                remove_tree_if_present(self.data_dir, created_dir)
+            raise
         created = self.get_model(ref)
         if created is None:
             raise RuntimeError("failed to persist trained model")
@@ -702,9 +721,7 @@ class Store:
         with self._locked() as conn:
             try:
                 with conn:
-                    conn.execute(
-                        "DELETE FROM models WHERE version = 0 AND builtin = 1"
-                    )
+                    conn.execute("DELETE FROM models WHERE version = 0 AND builtin = 1")
             except sqlite3.IntegrityError:
                 with conn:
                     conn.execute(
