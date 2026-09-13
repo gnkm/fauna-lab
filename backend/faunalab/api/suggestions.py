@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Query, Request
 from PIL import Image
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field
 
 from faunalab.api.errors import (
     baseline_unavailable,
@@ -93,25 +92,8 @@ def _parse_refs(raw: list[str]) -> list[str]:
     return refs
 
 
-async def _parse_create_refs(request: Request) -> list[str] | None:
-    raw = await request.body()
-    if not raw:
-        return None
-    content_type = request.headers.get("content-type", "")
-    if content_type and not content_type.startswith("application/json"):
-        raise error_for_code(
-            "validation_error",
-            "JSON で送ってください。",
-        )
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise error_for_code("validation_error", "要求の内容が不正です。") from exc
-    try:
-        body = SuggestionCreateRequest.model_validate(payload)
-    except ValidationError as exc:
-        raise error_for_code("validation_error", "要求の内容が不正です。") from exc
-    if body.refs is None:
+def _parse_create_refs(body: SuggestionCreateRequest | None) -> list[str] | None:
+    if body is None or body.refs is None:
         return None
     refs = _parse_refs(body.refs)
     if not refs:
@@ -167,8 +149,11 @@ def list_suggestions(
 
 
 @router.post("/api/suggestions")
-async def create_suggestions(request: Request) -> dict[str, Any]:
-    refs = await _parse_create_refs(request)
+def create_suggestions(
+    request: Request,
+    body: SuggestionCreateRequest | None = None,
+) -> dict[str, Any]:
+    refs = _parse_create_refs(body)
     store, model, runtime = _require_active_runtime(request)
     skipped_labeled = 0
     if refs is None:
@@ -211,7 +196,9 @@ async def create_suggestions(request: Request) -> dict[str, Any]:
             for row, result in zip(targets, folded, strict=True)
         ]
         try:
-            generated = store.upsert_suggestions(model_ref=model.ref, items=items)
+            generated, skipped_on_save = store.upsert_suggestions(
+                model_ref=model.ref, items=items
+            )
         except ImageNotFoundError as exc:
             raise image_not_found() from exc
         except ModelNotFoundError as exc:
@@ -221,7 +208,7 @@ async def create_suggestions(request: Request) -> dict[str, Any]:
             image.close()
     return {
         "generated_count": generated,
-        "skipped_labeled_count": skipped_labeled,
+        "skipped_labeled_count": skipped_labeled + skipped_on_save,
     }
 
 

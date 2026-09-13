@@ -831,9 +831,17 @@ class Store:
             rows = conn.execute(page_sql, [*params, limit, offset]).fetchall()
         return [_suggestion_row(row) for row in rows], total
 
-    def upsert_suggestions(self, *, model_ref: str, items: list[SuggestionNew]) -> int:
+    def upsert_suggestions(
+        self, *, model_ref: str, items: list[SuggestionNew]
+    ) -> tuple[int, int]:
+        """Return (generated_count, skipped_labeled_count).
+
+        Images that gained a confirmed label after targeting are skipped
+        and counted so callers can still satisfy REQ-F-SUG-003.
+        """
+
         if not items:
-            return 0
+            return 0, 0
         with self._locked() as conn:
             with conn:
                 model_row = conn.execute(
@@ -848,6 +856,7 @@ class Store:
                 if len(id_by_ref) != len(refs):
                     raise ImageNotFoundError
                 generated = 0
+                skipped_labeled = 0
                 for item in items:
                     image_id = id_by_ref[item.image_ref]
                     labeled = conn.execute(
@@ -855,6 +864,7 @@ class Store:
                         (image_id,),
                     ).fetchone()
                     if labeled is not None:
+                        skipped_labeled += 1
                         continue
                     conn.execute(
                         """
@@ -877,7 +887,7 @@ class Store:
                         ),
                     )
                     generated += 1
-        return generated
+        return generated, skipped_labeled
 
     def accept_suggestions(self, refs: list[str], assigned_at: str) -> int:
         unique = list(dict.fromkeys(refs))
