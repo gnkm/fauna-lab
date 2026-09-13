@@ -168,7 +168,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 - JSON フィールドは snake_case。観測インタフェース（`class_id`、`display_order`、`model_ref`）と揃える。
 - 識別子は観測の `ref` と同一文字列をプログラムインタフェースでも使う。形式は 8 節。
 - 日時は ISO 8601-1 の UTC、末尾 `Z`。
-- 一覧は `limit`（件数制限）と `offset`（位置）を受け付け、`items` と `total` を返す（REQ-API-006）。既定 `limit=50`、上限 `200`。同一条件の順序は一意。`_state` の配列は 8 節の昇順。プログラムインタフェースのジョブ・推論一覧は新しい順（I-API-003）。
+- 一覧は `limit`（件数制限）と `offset`（位置）を受け付け、`items` と `total` を返す（REQ-API-006）。既定 `limit=50`、上限 `200`。同一条件の順序は一意。`_state` の配列は 8 節の昇順。プログラムインタフェースのジョブ・推論一覧は新しい順（I-API-003）。候補一覧は信頼度の指定向き（I-API-003、I-SUG-006）。
 - Web UI は同一オリジンで API を呼ぶ。`FAUNALAB_CORS_ORIGINS` が空なら CORS は同一オリジンのみ（既定の提出形態）。
 - 破壊的操作の確認ダイアログは UI の責務（REQ-USE-002）。API は確認トークンを要求しない。
 
@@ -199,11 +199,11 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 |  | `POST /api/models/{ref}/evaluate` | 現在の試験分割で再評価 |
 | 推論 | `POST /api/inferences` | 新規ファイルおよび/または登録済 `ref`。最大 20 |
 |  | `GET /api/inferences` | 時系列（新しい順） |
-| 候補ラベル | `POST /api/suggestions` | 生成。確定ラベル付きは読み飛ばし、件数を返す |
-|  | `GET /api/suggestions` | 信頼度範囲と昇順/降順 |
-|  | `POST /api/suggestions/accept` | 指定画像の採用 |
-|  | `POST /api/suggestions/accept-by-threshold` | 閾値一括採用 |
-|  | `POST /api/suggestions/reject` | 却下。対象不在は失敗 |
+| 候補ラベル | `POST /api/suggestions` | 生成。`refs` 省略時は未ラベル集合（最大 100）。確定ラベル付きは読み飛ばし、件数を返す |
+|  | `GET /api/suggestions` | 信頼度範囲（閉区間）と昇順/降順。同値は `image_ref` 昇順 |
+|  | `POST /api/suggestions/accept` | 指定画像の採用。候補が無い画像は読み飛ばす |
+|  | `POST /api/suggestions/accept-by-threshold` | 閾値以上（`>=`）の一括採用 |
+|  | `POST /api/suggestions/reject` | 却下。1 件でも対象不在なら全体失敗 |
 | サンプル投入 | `POST /api/sample/import` | `assets/sample/manifest.json` を読み確定ラベル `human` で登録 |
 
 `GET /api/stats` を独立させた理由は、UI の概況（REQ-UI-006）を `_state` 全量に依存させないため。評価は `_state` で足りる。
@@ -222,7 +222,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 
 ### 3.4 未決（API）
 
-- 各操作の応答 JSON のうち、`openapi.yaml` にまだ無い追加フィールド。骨格の必須キーは契約済み。画像の `original_name` / `size_bytes` / `width` / `height` / `created_at` / `media_type` は F008 で契約した。
+- 各操作の応答 JSON のうち、`openapi.yaml` にまだ無い追加フィールド。骨格の必須キーは契約済み。画像の `original_name` / `size_bytes` / `width` / `height` / `created_at` / `media_type` は F008 で契約した。候補の生成・一覧・採用・却下のフィールドは F012 で契約した。
 - ページングを cursor にする必要が出た場合。想定規模 5,000 では offset で足りる。
 
 ### 3.5 画像の登録と削除（F008）
@@ -418,6 +418,16 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 - データ拡張（左右反転・ランダム切り出し）は訓練分割のみ。検証・試験には共通前処理だけ。
 - 学習済モデルの推論では `other_mass` を常に `null` にする（REQ-OBS-007）。
 
+### 7.4 候補ラベル（F012）
+
+候補生成は同期 API とし、1 回最大 100 枚（REQ-F-SUG-002）。有効モデルは推論と同じ版 0 の ONNX ランタイムを用いる。学習済モデルの候補生成は F014。候補は `suggestions` 表にだけ書き、推論履歴は残さない。
+
+- `POST /api/suggestions` の `refs` 省略（または `{}`）は、未ラベル画像を `created_at`・`ref` 昇順で最大 100 枚取る（I-SUG-001）。
+- 指定 `refs` に存在しない画像があれば全体を 404 にする。確定ラベル付きは推論せず `skipped_labeled_count` に数える。保存直前に確定ラベルが付いていた画像も同じ件数へ加算する（I-SUG-002、REQ-F-SUG-003）。
+- 再生成は `ON CONFLICT(image_id)` で上書きする（REQ-F-SUG-005）。
+- 採用は確定ラベル `source=model_suggested` を付けて候補を削除する。指定採用で候補が無い画像は読み飛ばす。却下は 1 件でも対象が無ければ全体を失敗にする（I-SUG-003）。
+- 閾値一括採用は `confidence >= min_confidence`（I-SUG-004）。
+
 ---
 
 ## 8. 観測インタフェースの実装
@@ -544,7 +554,7 @@ SRS 4 章の識別子を、上の区分へ対応付ける。未記載のまま�
 | VER-F-MDL-001〜002 | 9.1 | |
 | VER-F-INF-001〜002 | 9.1 | |
 | VER-F-BASE-001〜004 | 9.1 | |
-| VER-F-SUG-001〜004 | 9.1 | |
+| VER-F-SUG-001〜004 | 9.1 | `backend/tests/test_suggestions.py` |
 | VER-F-SYS-001 | 9.1 | |
 | VER-USE-001 | 9.3 | 被験者。自動試験にしない |
 | VER-USE-002 | 9.4 | 空状態は Playwright 部分。全画面目視は初期対象外 |
@@ -600,7 +610,7 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超 JPEG でステータスが異�
 1.3.2 は「ラベル解除」を機能に含めるが、3.2.2 は付与・上書き・一括に厚い。解除は `DELETE /api/images/{ref}/label` で確定ラベルを外し、分割は `unassigned` に戻す（確定が無い画像は分割対象外、REQ-F-DS-004）。
 
 **I-API-003 一覧の向き**
-8.2 は試験再現のため `_state` の配列を昇順に固定する。プログラムインタフェースは利用者が新しいものを見る用途なので、`GET /api/jobs` と `GET /api/inferences` は `created_at` 降順、同刻は `ref` 降順とする。`GET /api/images` は 8.2 と同じ昇順。`GET /api/models` は版番号降順。いずれも第二キーまで含めて一意（REQ-API-006）。
+8.2 は試験再現のため `_state` の配列を昇順に固定する。プログラムインタフェースは利用者が新しいものを見る用途なので、`GET /api/jobs` と `GET /api/inferences` は `created_at` 降順、同刻は `ref` 降順とする。`GET /api/images` は 8.2 と同じ昇順。`GET /api/models` は版番号降順。`GET /api/suggestions` は `confidence` の指定向き（既定は降順）、同値は `image_ref` 昇順（I-SUG-006）。いずれも第二キーまで含めて一意（REQ-API-006）。
 
 **I-MDL-001 学習済モデルの登録契約（F014）**
 学習ジョブ（F014）はモデル版を自ら INSERT しない。成功時は `faunalab.domain.models.register_trained_model` を呼ぶ。この関数が版番号（1 から連番、`MAX(version)+1`、削除済も含めて再利用しない）、有効化規則（REQ-F-MDL-004: 有効が無い、または有効が版 0 のときだけ自動有効化）、成果物ディレクトリ `models/{version}/` を担う。版番号の決定・ディレクトリ作成・自動有効化・INSERT は同一ロック／トランザクションで行い、ディレクトリ作成に失敗したら行を残さない。指標は呼び出し側が渡さない限り `null`。試験分割が空ならそのまま成功（REQ-F-MDL-002）。空でなければ F014 が `model.onnx` を書いたあと `evaluate_model` を呼ぶ。空のときに `evaluate_model` を呼んではならない（REQ-F-MDL-009 は再評価を失敗させる）。
@@ -628,6 +638,24 @@ REQ-F-INF-006 は履歴を残すために新規画像を登録することを求
 
 **I-INF-002 推論は部分成功にしない**
 画像アップロードは件別結果の部分成功（I-API-001）だが、推論は 1 要求をひとまとまりとする。媒体型不正・サイズ超過・対象不在・件数超過は操作全体を失敗にする。
+
+**I-SUG-001 未指定は未ラベル集合**
+`POST /api/suggestions` の `refs` 省略または空オブジェクトは、確定ラベルを持たない画像を `created_at`・`ref` 昇順で最大 100 枚処理する。空の `refs` 配列は要求内容の誤りとする。
+
+**I-SUG-002 指定集合の不在と確定の読み飛ばし**
+指定 `refs` に存在しない画像が 1 件でもあれば全体を 404 `image_not_found` にする。確定ラベル付きは生成対象にせず、要求全体は失敗にしない（REQ-F-SUG-003）。推論開始後に確定ラベルが付いた画像も保存時に読み飛ばし、その件数を `skipped_labeled_count` へ含める。
+
+**I-SUG-003 採用の読み飛ばしと却下の原子性**
+指定採用は、候補が無い画像を読み飛ばして `updated_count` だけ返す。画像そのものが無いときは 404 `image_not_found`。却下は対象の候補が 1 件でも無ければ全体を失敗（404 `suggestion_not_found`）とし、一部だけ消さない。
+
+**I-SUG-004 閾値は以上**
+`min_confidence` は閉区間（`confidence >= min_confidence`）とする。VER-F-SUG-003 の「閾値以上」に合わせる。
+
+**I-SUG-005 候補生成は推論履歴を残さない**
+候補は `suggestions` のみを更新する。`POST /api/inferences` とは別操作であり、生成の副作用で推論履歴を増やさない。
+
+**I-SUG-006 候補一覧の並べ替え**
+`GET /api/suggestions` の第一キーは信頼度、第二キーは `image_ref` 昇順。`order` の既定は降順。
 
 **I-USE-001 犬種知識を前提にしない**
 人手の 1 枚ラベルを必須手順にしない。主経路はサンプル投入 → 候補生成と採用 → 学習 → 推論とする（REQ-USE-001）。

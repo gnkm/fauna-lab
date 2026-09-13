@@ -70,6 +70,10 @@ class ImageNotFoundError(Exception):
     """A referenced image ref does not exist."""
 
 
+class SuggestionNotFoundError(Exception):
+    """A referenced suggestion does not exist."""
+
+
 @dataclass(frozen=True, slots=True)
 class ImageRow:
     ref: str
@@ -133,6 +137,22 @@ class InferenceNew:
     scores: list[dict[str, Any]]
     created_at: str
     duration_ms: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SuggestionRow:
+    image_ref: str
+    class_id: str
+    confidence: float
+    model_ref: str
+
+
+@dataclass(frozen=True, slots=True)
+class SuggestionNew:
+    image_ref: str
+    class_id: str
+    confidence: float
+    created_at: str
 
 
 class Store:
@@ -886,6 +906,189 @@ class Store:
             ).fetchall()
         return [_inference_row(row) for row in rows]
 
+    def get_images_by_refs(self, refs: list[str]) -> list[ImageRow]:
+        unique = list(dict.fromkeys(refs))
+        if not unique:
+            return []
+        found: dict[str, ImageRow] = {}
+        with self._locked() as conn:
+            for start in range(0, len(unique), IN_QUERY_CHUNK):
+                chunk = unique[start : start + IN_QUERY_CHUNK]
+                placeholders = ",".join("?" * len(chunk))
+                rows = conn.execute(
+                    f"{_IMAGE_SELECT} WHERE i.ref IN ({placeholders})",
+                    chunk,
+                ).fetchall()
+                for row in rows:
+                    decoded = _image_row(row)
+                    found[decoded.ref] = decoded
+        missing = [ref for ref in unique if ref not in found]
+        if missing:
+            raise ImageNotFoundError
+        return [found[ref] for ref in unique]
+
+    def list_suggestions_page(
+        self,
+        *,
+        min_confidence: float | None,
+        max_confidence: float | None,
+        order: str,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[SuggestionRow], int]:
+        conditions: list[str] = []
+        params: list[object] = []
+        if min_confidence is not None:
+            conditions.append("s.confidence >= ?")
+            params.append(min_confidence)
+        if max_confidence is not None:
+            conditions.append("s.confidence <= ?")
+            params.append(max_confidence)
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        direction = "ASC" if order == "asc" else "DESC"
+        count_sql = (
+            "SELECT COUNT(*) AS n FROM suggestions AS s "
+            f"JOIN images AS i ON i.id = s.image_id {where}"
+        )
+        page_sql = (
+            f"{_SUGGESTION_SELECT} {where} "
+            f"ORDER BY s.confidence {direction}, i.ref ASC LIMIT ? OFFSET ?"
+        )
+        with self._locked() as conn:
+            total = int(conn.execute(count_sql, params).fetchone()["n"])
+            rows = conn.execute(page_sql, [*params, limit, offset]).fetchall()
+        return [_suggestion_row(row) for row in rows], total
+
+    def upsert_suggestions(
+        self, *, model_ref: str, items: list[SuggestionNew]
+    ) -> tuple[int, int]:
+        """Return (generated_count, skipped_labeled_count).
+
+        Images that gained a confirmed label after targeting are skipped
+        and counted so callers can still satisfy REQ-F-SUG-003.
+        """
+
+        if not items:
+            return 0, 0
+        with self._locked() as conn:
+            with conn:
+                model_row = conn.execute(
+                    "SELECT id FROM models WHERE ref = ?",
+                    (model_ref,),
+                ).fetchone()
+                if model_row is None:
+                    raise ModelNotFoundError
+                model_id = int(model_row["id"])
+                refs = list(dict.fromkeys(item.image_ref for item in items))
+                id_by_ref = _image_ids_by_refs(conn, refs)
+                if len(id_by_ref) != len(refs):
+                    raise ImageNotFoundError
+                generated = 0
+                skipped_labeled = 0
+                for item in items:
+                    image_id = id_by_ref[item.image_ref]
+                    labeled = conn.execute(
+                        "SELECT 1 FROM labels WHERE image_id = ?",
+                        (image_id,),
+                    ).fetchone()
+                    if labeled is not None:
+                        skipped_labeled += 1
+                        continue
+                    conn.execute(
+                        """
+                        INSERT INTO suggestions (
+                            image_id, class_id, confidence, model_id, created_at
+                        )
+                        VALUES (?, ?, ?, ?, ?)
+                        ON CONFLICT(image_id) DO UPDATE SET
+                            class_id = excluded.class_id,
+                            confidence = excluded.confidence,
+                            model_id = excluded.model_id,
+                            created_at = excluded.created_at
+                        """,
+                        (
+                            image_id,
+                            item.class_id,
+                            item.confidence,
+                            model_id,
+                            item.created_at,
+                        ),
+                    )
+                    generated += 1
+        return generated, skipped_labeled
+
+    def accept_suggestions(self, refs: list[str], assigned_at: str) -> int:
+        unique = list(dict.fromkeys(refs))
+        with self._locked() as conn:
+            with conn:
+                id_by_ref = _image_ids_by_refs(conn, unique)
+                if len(id_by_ref) != len(unique):
+                    raise ImageNotFoundError
+                accepted = 0
+                for ref in unique:
+                    suggestion = conn.execute(
+                        """
+                        SELECT class_id
+                        FROM suggestions
+                        WHERE image_id = ?
+                        """,
+                        (id_by_ref[ref],),
+                    ).fetchone()
+                    if suggestion is None:
+                        continue
+                    _upsert_label_row(
+                        conn,
+                        id_by_ref[ref],
+                        str(suggestion["class_id"]),
+                        "model_suggested",
+                        assigned_at,
+                    )
+                    accepted += 1
+        return accepted
+
+    def accept_suggestions_by_threshold(
+        self, min_confidence: float, assigned_at: str
+    ) -> int:
+        with self._locked() as conn:
+            with conn:
+                rows = conn.execute(
+                    """
+                    SELECT i.id AS image_id, s.class_id AS class_id
+                    FROM suggestions AS s
+                    JOIN images AS i ON i.id = s.image_id
+                    LEFT JOIN labels AS l ON l.image_id = i.id
+                    WHERE s.confidence >= ?
+                      AND l.image_id IS NULL
+                    ORDER BY i.ref ASC
+                    """,
+                    (min_confidence,),
+                ).fetchall()
+                for row in rows:
+                    _upsert_label_row(
+                        conn,
+                        int(row["image_id"]),
+                        str(row["class_id"]),
+                        "model_suggested",
+                        assigned_at,
+                    )
+        return len(rows)
+
+    def delete_suggestions(self, refs: list[str]) -> int:
+        unique = list(dict.fromkeys(refs))
+        with self._locked() as conn:
+            with conn:
+                id_by_ref = _image_ids_by_refs(conn, unique)
+                if len(id_by_ref) != len(unique):
+                    raise SuggestionNotFoundError
+                for ref in unique:
+                    deleted = conn.execute(
+                        "DELETE FROM suggestions WHERE image_id = ?",
+                        (id_by_ref[ref],),
+                    )
+                    if deleted.rowcount != 1:
+                        raise SuggestionNotFoundError
+        return len(unique)
+
 
 _INFERENCE_SELECT = """
 SELECT
@@ -901,6 +1104,27 @@ SELECT
 FROM inferences AS inf
 JOIN images AS img ON img.id = inf.image_id
 JOIN models AS m ON m.id = inf.model_id
+"""
+
+
+def _suggestion_row(row: sqlite3.Row) -> SuggestionRow:
+    return SuggestionRow(
+        image_ref=row["image_ref"],
+        class_id=row["class_id"],
+        confidence=float(row["confidence"]),
+        model_ref=row["model_ref"],
+    )
+
+
+_SUGGESTION_SELECT = """
+SELECT
+    i.ref AS image_ref,
+    s.class_id AS class_id,
+    s.confidence AS confidence,
+    m.ref AS model_ref
+FROM suggestions AS s
+JOIN images AS i ON i.id = s.image_id
+JOIN models AS m ON m.id = s.model_id
 """
 
 
