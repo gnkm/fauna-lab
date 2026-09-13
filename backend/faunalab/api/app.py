@@ -23,6 +23,7 @@ from faunalab.api.spa import SpaStaticFiles
 from faunalab.api.splits import router as splits_router
 from faunalab.api.state import router as state_router
 from faunalab.api.stats import router as stats_router
+from faunalab.api.suggestions import router as suggestions_router
 from faunalab.jobs.supervisor import start_worker, stop_worker
 from faunalab.ml.baseline import register_baseline_model
 from faunalab.ml.runtime import try_load_baseline_runtime
@@ -111,6 +112,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(models_router)
     app.include_router(inferences_router)
     app.include_router(jobs_router)
+    app.include_router(suggestions_router)
     dist = resolved.web_dist_dir
     if dist.is_dir():
         app.mount("/", SpaStaticFiles(directory=dist, html=True), name="ui")
