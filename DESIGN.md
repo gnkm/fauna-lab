@@ -433,7 +433,7 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 
 ### 7.4 候補ラベル（F012）
 
-候補生成は同期 API とし、1 回最大 100 枚（REQ-F-SUG-002）。有効モデルは推論と同じ版 0 の ONNX ランタイムを用いる。学習済モデルの候補生成は F014。候補は `suggestions` 表にだけ書き、推論履歴は残さない。
+候補生成は同期 API とし、1 回最大 100 枚（REQ-F-SUG-002）。有効モデルは推論と同じランタイムを用いる（版 0 のベースライン、または学習済 ONNX。埋め込みヘッドは I-TRN-001）。候補は `suggestions` 表にだけ書き、推論履歴は残さない。
 
 - `POST /api/suggestions` の `refs` 省略（または `{}`）は、未ラベル画像を `created_at`・`ref` 昇順で最大 100 枚取る（I-SUG-001）。
 - 指定 `refs` に存在しない画像があれば全体を 404 にする。確定ラベル付きは推論せず `skipped_labeled_count` に数える。保存直前に確定ラベルが付いていた画像も同じ件数へ加算する（I-SUG-002、REQ-F-SUG-003）。

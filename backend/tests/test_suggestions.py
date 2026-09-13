@@ -16,14 +16,17 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import numpy as np
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
 from faunalab.domain.classes import CLASS_IDS
+from faunalab.domain.models import register_trained_model
 from faunalab.domain.suggestions import MAX_SUGGESTION_IMAGES
 from faunalab.ml.fold import FoldResult
+from faunalab.ml.train import N_CLASSES, export_cnn_onnx
 from faunalab.persist.store import Store, SuggestionNew
 from faunalab.settings import Settings, get_settings
 from PIL import Image
@@ -508,3 +511,46 @@ def test_runtime_openapi_includes_suggestion_create_body(client: TestClient) -> 
     schemas = body.get("components", {}).get("schemas", {})
     assert "SuggestionCreateRequest" in schemas
     assert "refs" in schemas["SuggestionCreateRequest"].get("properties", {})
+
+
+def _cnn_artifact_bytes(tmp_path: Path) -> bytes:
+    rng = np.random.default_rng(3)
+    dest = tmp_path / "trained.onnx"
+    export_cnn_onnx(
+        rng.normal(0, 0.05, size=(8, 3, 3, 3)).astype(np.float32),
+        np.zeros((8,), dtype=np.float32),
+        rng.normal(0, 0.05, size=(16, 8, 3, 3)).astype(np.float32),
+        np.zeros((16,), dtype=np.float32),
+        rng.normal(0, 0.05, size=(N_CLASSES, 16)).astype(np.float32),
+        np.zeros((N_CLASSES,), dtype=np.float32),
+        dest,
+    )
+    return dest.read_bytes()
+
+
+def test_trained_active_model_generates_suggestions(
+    baseline_client: TestClient, tmp_path: Path
+) -> None:
+    """F014: 学習済モデルが有効でも候補を生成できる。"""
+    refs = _upload_n(baseline_client, 2)
+    store = _client_store(baseline_client)
+    model = register_trained_model(
+        store,
+        created_at="2026-09-13T00:00:00Z",
+        artifact_bytes=_cnn_artifact_bytes(tmp_path),
+    )
+    assert model.active is True
+    assert model.builtin is False
+
+    response = baseline_client.post("/api/suggestions", json={"refs": refs})
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "generated_count": 2,
+        "skipped_labeled_count": 0,
+    }
+    listed = baseline_client.get("/api/suggestions").json()["items"]
+    assert len(listed) == 2
+    assert {item["model_ref"] for item in listed} == {model.ref}
+    assert all(item["class_id"] in CLASS_IDS for item in listed)
+    assert all(0.0 <= item["confidence"] <= 1.0 for item in listed)
+    assert baseline_client.get("/api/_state").json()["inferences"] == []
