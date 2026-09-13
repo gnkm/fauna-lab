@@ -60,15 +60,47 @@ export async function postJson<T>(
   path: string,
   signal?: AbortSignal,
 ): Promise<T> {
+  return sendJson<T>(path, "POST", undefined, signal);
+}
+
+export async function sendJson<T>(
+  path: string,
+  method: "POST" | "PUT",
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const init: RequestInit = { method, headers, signal };
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    init.body = JSON.stringify(body);
+  }
+  const response = await fetch(path, init);
+  if (!response.ok) {
+    throw await readProblem(response);
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  const text = await response.text();
+  if (text.trim() === "") {
+    return undefined as T;
+  }
+  return JSON.parse(text) as T;
+}
+
+export async function sendDelete(
+  path: string,
+  signal?: AbortSignal,
+): Promise<void> {
   const response = await fetch(path, {
-    method: "POST",
+    method: "DELETE",
     headers: { Accept: "application/json" },
     signal,
   });
   if (!response.ok) {
     throw await readProblem(response);
   }
-  return (await response.json()) as T;
 }
 
 export function errorMessage(error: unknown): string {
