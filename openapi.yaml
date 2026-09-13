@@ -834,7 +834,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
+            $ref: "#/components/schemas/ProblemBadRequest"
           examples:
             validation_error:
               value:
@@ -849,7 +849,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
+            $ref: "#/components/schemas/ProblemNotFound"
           examples:
             image_not_found:
               value:
@@ -864,7 +864,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
+            $ref: "#/components/schemas/ProblemConflict"
           examples:
             job_not_cancelable:
               value:
@@ -879,7 +879,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
+            $ref: "#/components/schemas/ProblemUnprocessable"
           examples:
             training_precondition:
               value:
@@ -894,7 +894,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
+            $ref: "#/components/schemas/ProblemUnsupportedMediaType"
           examples:
             unsupported_media_type:
               value:
@@ -909,7 +909,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
+            $ref: "#/components/schemas/ProblemPayloadTooLarge"
           examples:
             payload_too_large:
               value:
@@ -924,7 +924,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
+            $ref: "#/components/schemas/ProblemInternalError"
           examples:
             internal_error:
               value:
@@ -1008,13 +1008,88 @@ components:
           description: ステータスの短い英語名
         status:
           type: integer
-          enum: [400, 404, 409, 413, 415, 422, 500]
+          description: HTTP ステータス。許容値はレスポンス種別ごとの Problem* スキーマで固定する。
         detail:
           type: string
           description: 利用者向けの日本語説明
         code:
           $ref: "#/components/schemas/ErrorCode"
-      unevaluatedProperties: false
+    ProblemBadRequest:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            status:
+              const: 400
+            code:
+              const: validation_error
+    ProblemNotFound:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            status:
+              const: 404
+            code:
+              enum:
+                - image_not_found
+                - job_not_found
+                - model_not_found
+                - inference_not_found
+                - suggestion_not_found
+    ProblemConflict:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            status:
+              const: 409
+            code:
+              enum:
+                - image_duplicate
+                - job_not_cancelable
+                - model_not_deletable
+    ProblemUnprocessable:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            status:
+              const: 422
+            code:
+              enum:
+                - training_precondition
+                - no_active_model
+                - empty_test_split
+                - baseline_unavailable
+                - sample_unavailable
+    ProblemUnsupportedMediaType:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            status:
+              const: 415
+            code:
+              const: unsupported_media_type
+    ProblemPayloadTooLarge:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            status:
+              const: 413
+            code:
+              const: payload_too_large
+    ProblemInternalError:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            status:
+              const: 500
+            code:
+              const: internal_error
     PageMeta:
       type: object
       required: [items, total]
@@ -1341,6 +1416,67 @@ components:
         support:
           type: integer
           minimum: 0
+    PerClassMetrics:
+      type: object
+      additionalProperties: false
+      description: 3.5.2 の 8 クラスを必須キーとする（REQ-OBS-006a）。未知キーは不可。
+      required:
+        - samoyed
+        - great_pyrenees
+        - boxer
+        - american_bulldog
+        - chihuahua
+        - miniature_pinscher
+        - pomeranian
+        - havanese
+      properties:
+        samoyed:
+          $ref: "#/components/schemas/ClassMetric"
+        great_pyrenees:
+          $ref: "#/components/schemas/ClassMetric"
+        boxer:
+          $ref: "#/components/schemas/ClassMetric"
+        american_bulldog:
+          $ref: "#/components/schemas/ClassMetric"
+        chihuahua:
+          $ref: "#/components/schemas/ClassMetric"
+        miniature_pinscher:
+          $ref: "#/components/schemas/ClassMetric"
+        pomeranian:
+          $ref: "#/components/schemas/ClassMetric"
+        havanese:
+          $ref: "#/components/schemas/ClassMetric"
+    ConfusionMatrixRow:
+      type: array
+      minItems: 8
+      maxItems: 8
+      items:
+        type: integer
+        minimum: 0
+    ConfusionMatrix:
+      type: object
+      required: [labels, matrix]
+      properties:
+        labels:
+          type: array
+          minItems: 8
+          maxItems: 8
+          prefixItems:
+            - const: samoyed
+            - const: great_pyrenees
+            - const: boxer
+            - const: american_bulldog
+            - const: chihuahua
+            - const: miniature_pinscher
+            - const: pomeranian
+            - const: havanese
+          description: classes の display_order 昇順（REQ-OBS-006）。
+        matrix:
+          type: array
+          minItems: 8
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/ConfusionMatrixRow"
     Metrics:
       type: object
       required: [accuracy, per_class, confusion_matrix]
@@ -1350,28 +1486,9 @@ components:
           minimum: 0
           maximum: 1
         per_class:
-          type: object
-          description: 8 クラスすべてのキーを持つ（REQ-OBS-006a）。
-          additionalProperties:
-            $ref: "#/components/schemas/ClassMetric"
-          minProperties: 8
+          $ref: "#/components/schemas/PerClassMetrics"
         confusion_matrix:
-          type: object
-          required: [labels, matrix]
-          properties:
-            labels:
-              type: array
-              minItems: 8
-              maxItems: 8
-              items:
-                $ref: "#/components/schemas/ClassId"
-            matrix:
-              type: array
-              items:
-                type: array
-                items:
-                  type: integer
-                  minimum: 0
+          $ref: "#/components/schemas/ConfusionMatrix"
     Model:
       type: object
       required: [ref, version, builtin, active, metrics]
@@ -1443,6 +1560,7 @@ components:
             $ref: "#/components/schemas/ClassScore"
     InferenceCreateJson:
       type: object
+      additionalProperties: false
       required: [refs]
       properties:
         refs:
@@ -1452,19 +1570,381 @@ components:
           items:
             $ref: "#/components/schemas/Ref"
     InferenceCreateRequest:
+      description: |
+        files と refs の合計は 1 以上 20 以下（REQ-F-INF-002）。
+        JSON 経路は refs のみ。混在は multipart で files と refs を同時に送る。
+      oneOf:
+        - $ref: "#/components/schemas/InferenceCreateFilesOnly"
+        - $ref: "#/components/schemas/InferenceCreateRefsOnly"
+        - $ref: "#/components/schemas/InferenceCreateMixed"
+    InferenceCreateFilesOnly:
       type: object
+      additionalProperties: false
+      required: [files]
       properties:
         files:
           type: array
+          minItems: 1
           maxItems: 20
           items:
             type: string
             format: binary
+    InferenceCreateRefsOnly:
+      type: object
+      additionalProperties: false
+      required: [refs]
+      properties:
         refs:
           type: array
+          minItems: 1
           maxItems: 20
           items:
             $ref: "#/components/schemas/Ref"
+    InferenceCreateMixed:
+      description: files n 枚と refs 最大 (20-n) 件の組。合計は常に 20 以下。
+      oneOf:
+        - title: mixed_1_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 19
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_2_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 18
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_3_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 3
+              maxItems: 3
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 17
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_4_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 4
+              maxItems: 4
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 16
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_5_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 5
+              maxItems: 5
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 15
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_6_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 6
+              maxItems: 6
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 14
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_7_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 7
+              maxItems: 7
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 13
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_8_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 8
+              maxItems: 8
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 12
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_9_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 9
+              maxItems: 9
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 11
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_10_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 10
+              maxItems: 10
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 10
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_11_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 11
+              maxItems: 11
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 9
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_12_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 12
+              maxItems: 12
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 8
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_13_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 13
+              maxItems: 13
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 7
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_14_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 14
+              maxItems: 14
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 6
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_15_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 15
+              maxItems: 15
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 5
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_16_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 16
+              maxItems: 16
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 4
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_17_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 17
+              maxItems: 17
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 3
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_18_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 18
+              maxItems: 18
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 2
+              items:
+                $ref: "#/components/schemas/Ref"
+        - title: mixed_19_files
+          type: object
+          additionalProperties: false
+          required: [files, refs]
+          properties:
+            files:
+              type: array
+              minItems: 19
+              maxItems: 19
+              items:
+                type: string
+                format: binary
+            refs:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                $ref: "#/components/schemas/Ref"
     InferenceCreateResult:
       type: object
       required: [items]

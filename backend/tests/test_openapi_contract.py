@@ -140,3 +140,115 @@ def test_openapi_yaml_parses_and_maps_seven_statuses() -> None:
     problem = doc["components"]["schemas"]["Problem"]
     assert problem["additionalProperties"] is False
     assert set(problem["required"]) == {"type", "title", "status", "detail", "code"}
+
+    situation_schemas = {
+        "要求内容の誤り": ("ProblemBadRequest", 400, {"validation_error"}),
+        "対象の不在": (
+            "ProblemNotFound",
+            404,
+            {
+                "image_not_found",
+                "job_not_found",
+                "model_not_found",
+                "inference_not_found",
+                "suggestion_not_found",
+            },
+        ),
+        "現在の状態では実行できない操作": (
+            "ProblemConflict",
+            409,
+            {"image_duplicate", "job_not_cancelable", "model_not_deletable"},
+        ),
+        "前提条件の不成立": (
+            "ProblemUnprocessable",
+            422,
+            {
+                "training_precondition",
+                "no_active_model",
+                "empty_test_split",
+                "baseline_unavailable",
+                "sample_unavailable",
+            },
+        ),
+        "許可されない媒体型": (
+            "ProblemUnsupportedMediaType",
+            415,
+            {"unsupported_media_type"},
+        ),
+        "上限を超える大きさ": ("ProblemPayloadTooLarge", 413, {"payload_too_large"}),
+        "システム内部の予期しない誤り": (
+            "ProblemInternalError",
+            500,
+            {"internal_error"},
+        ),
+    }
+    for situation, (schema_name, status, codes) in situation_schemas.items():
+        response_name = {
+            "ProblemBadRequest": "BadRequest",
+            "ProblemNotFound": "NotFound",
+            "ProblemConflict": "Conflict",
+            "ProblemUnprocessable": "Unprocessable",
+            "ProblemUnsupportedMediaType": "UnsupportedMediaType",
+            "ProblemPayloadTooLarge": "PayloadTooLarge",
+            "ProblemInternalError": "InternalError",
+        }[schema_name]
+        assert responses[response_name]["x-srs-situation"] == situation
+        schema_ref = responses[response_name]["content"]["application/problem+json"][
+            "schema"
+        ]["$ref"]
+        assert schema_ref.endswith(schema_name)
+        constraint = doc["components"]["schemas"][schema_name]["allOf"][1]["properties"]
+        assert constraint["status"]["const"] == status
+        allowed = (
+            {constraint["code"].get("const")}
+            if "const" in constraint["code"]
+            else set(constraint["code"]["enum"])
+        )
+        assert allowed == codes
+
+
+def test_metrics_require_fixed_eight_classes() -> None:
+    yaml = pytest.importorskip("yaml")
+    doc = yaml.safe_load(OPENAPI_PATH.read_text(encoding="utf-8"))
+    per_class = doc["components"]["schemas"]["PerClassMetrics"]
+    class_ids = [
+        "samoyed",
+        "great_pyrenees",
+        "boxer",
+        "american_bulldog",
+        "chihuahua",
+        "miniature_pinscher",
+        "pomeranian",
+        "havanese",
+    ]
+    assert per_class["additionalProperties"] is False
+    assert per_class["required"] == class_ids
+    assert list(per_class["properties"]) == class_ids
+    matrix = doc["components"]["schemas"]["ConfusionMatrix"]
+    assert matrix["properties"]["matrix"]["minItems"] == 8
+    assert matrix["properties"]["matrix"]["maxItems"] == 8
+    row = doc["components"]["schemas"]["ConfusionMatrixRow"]
+    assert row["minItems"] == 8
+    assert row["maxItems"] == 8
+    labels = matrix["properties"]["labels"]["prefixItems"]
+    assert [item["const"] for item in labels] == class_ids
+
+
+def test_inference_request_caps_total_at_20() -> None:
+    yaml = pytest.importorskip("yaml")
+    doc = yaml.safe_load(OPENAPI_PATH.read_text(encoding="utf-8"))
+    request = doc["components"]["schemas"]["InferenceCreateRequest"]
+    assert len(request["oneOf"]) == 3
+    files_only = doc["components"]["schemas"]["InferenceCreateFilesOnly"]
+    refs_only = doc["components"]["schemas"]["InferenceCreateRefsOnly"]
+    assert files_only["properties"]["files"]["maxItems"] == 20
+    assert "refs" not in files_only["properties"]
+    assert refs_only["properties"]["refs"]["maxItems"] == 20
+    assert "files" not in refs_only["properties"]
+    mixed = doc["components"]["schemas"]["InferenceCreateMixed"]["oneOf"]
+    assert mixed
+    for branch in mixed:
+        n_files = branch["properties"]["files"]["maxItems"]
+        n_refs = branch["properties"]["refs"]["maxItems"]
+        assert n_files == branch["properties"]["files"]["minItems"]
+        assert n_files + n_refs == 20
