@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.domain.classes import CLASS_IDS
@@ -102,6 +103,49 @@ def test_checksum_mismatch_is_rejected(tmp_path: Path) -> None:
     inspection = inspect_baseline_assets(assets)
     assert not inspection.ok
     assert "sha256" in inspection.reason
+
+
+def test_hash_read_error_does_not_abort_inspect(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assets = _copy_assets(tmp_path)
+
+    def boom(_path: Path) -> str:
+        raise OSError("simulated io error")
+
+    monkeypatch.setattr("faunalab.ml.baseline.sha256_file", boom)
+    inspection = inspect_baseline_assets(assets)
+    assert not inspection.ok
+    assert "unreadable" in inspection.reason
+
+
+def test_class_map_must_be_listed_in_manifest(tmp_path: Path) -> None:
+    assets = _copy_assets(tmp_path)
+    manifest_path = assets / "baseline" / "MANIFEST.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"] = [
+        entry
+        for entry in manifest["files"]
+        if entry["file"] != "class_map.json"
+    ]
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    inspection = inspect_baseline_assets(assets)
+    assert not inspection.ok
+    assert "class_map.json" in inspection.reason
+
+
+def test_duplicate_manifest_file_is_rejected(tmp_path: Path) -> None:
+    assets = _copy_assets(tmp_path)
+    manifest_path = assets / "baseline" / "MANIFEST.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    class_map_entry = next(
+        entry for entry in manifest["files"] if entry["file"] == "class_map.json"
+    )
+    manifest["files"].append(class_map_entry)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    inspection = inspect_baseline_assets(assets)
+    assert not inspection.ok
+    assert "more than once" in inspection.reason
 
 
 def test_class_map_missing_key_is_rejected(tmp_path: Path) -> None:

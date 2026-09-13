@@ -64,7 +64,12 @@ def inspect_baseline_assets(assets_dir: Path) -> BaselineInspection:
         listed = _listed_files(manifest)
     except ValueError as exc:
         return BaselineInspection(ok=False, reason=str(exc))
-    baseline_resolved = baseline_dir.resolve()
+    try:
+        baseline_resolved = baseline_dir.resolve()
+    except OSError as exc:
+        return BaselineInspection(
+            ok=False, reason=f"baseline directory unreadable: {exc}"
+        )
     for relative, expected in listed:
         path = baseline_dir / relative
         try:
@@ -77,7 +82,10 @@ def inspect_baseline_assets(assets_dir: Path) -> BaselineInspection:
             )
         if not resolved.is_file():
             return BaselineInspection(ok=False, reason=f"{relative} missing")
-        actual = sha256_file(resolved)
+        try:
+            actual = sha256_file(resolved)
+        except OSError as exc:
+            return BaselineInspection(ok=False, reason=f"{relative} unreadable: {exc}")
         if actual != expected:
             return BaselineInspection(
                 ok=False, reason=f"{relative} sha256 mismatch"
@@ -143,7 +151,12 @@ def load_class_map(
 def register_baseline_model(store: Store, assets_dir: Path) -> BaselineInspection:
     """Register version 0 when assets validate. Never write under assets/."""
 
-    inspection = inspect_baseline_assets(assets_dir)
+    try:
+        inspection = inspect_baseline_assets(assets_dir)
+    except OSError as exc:
+        inspection = BaselineInspection(
+            ok=False, reason=f"assets unreadable: {exc}"
+        )
     if not inspection.ok:
         LOGGER.warning(
             "baseline model version 0 not registered: %s", inspection.reason
@@ -184,6 +197,11 @@ def _listed_files(manifest: dict[str, Any]) -> list[tuple[str, str]]:
         ):
             raise ValueError("MANIFEST.json files entry is invalid")
         items.append((relative, file_digest.lower()))
+    names = [name for name, _digest in items]
+    if len(names) != len(set(names)):
+        raise ValueError("MANIFEST.json lists a file more than once")
+    if CLASS_MAP_NAME not in names:
+        raise ValueError("MANIFEST.json does not list class_map.json")
     return items
 
 
