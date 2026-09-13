@@ -16,6 +16,7 @@ import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
@@ -31,7 +32,7 @@ from faunalab.domain.inferences import (
     ranked_scores,
 )
 from faunalab.ml.fold import FoldResult
-from faunalab.persist.store import Store
+from faunalab.persist.store import ImageNotFoundError, Store
 from faunalab.settings import Settings, get_settings
 from PIL import Image
 
@@ -360,3 +361,45 @@ def test_duplicate_file_reuses_existing_image(baseline_client: TestClient) -> No
     assert first_image == second_image
     images = baseline_client.get("/api/_state").json()["images"]
     assert len(images) == 1
+
+
+def test_json_blank_ref_is_validation_error(baseline_client: TestClient) -> None:
+    response = baseline_client.post("/api/inferences", json={"refs": ["   "]})
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+    assert baseline_client.get("/api/_state").json()["inferences"] == []
+
+
+def test_history_insert_failure_rolls_back_new_images(
+    baseline_client: TestClient,
+) -> None:
+    jpeg = _image_bytes(color=(11, 12, 13))
+    with patch.object(Store, "insert_inferences", side_effect=ImageNotFoundError):
+        response = _post_files(baseline_client, [("a.jpg", jpeg)])
+    assert response.status_code == 404
+    state = baseline_client.get("/api/_state").json()
+    assert state["images"] == []
+    assert state["inferences"] == []
+
+
+def test_insert_failure_keeps_already_registered_image(
+    baseline_client: TestClient,
+) -> None:
+    jpeg = _image_bytes(color=(14, 15, 16))
+    uploaded = baseline_client.post(
+        "/api/images",
+        files=[("files", ("r.jpg", jpeg, "image/jpeg"))],
+    )
+    assert uploaded.status_code == 200
+    existing = uploaded.json()["items"][0]["ref"]
+    extra = _image_bytes(color=(20, 21, 22))
+    with patch.object(Store, "insert_inferences", side_effect=ImageNotFoundError):
+        response = baseline_client.post(
+            "/api/inferences",
+            files=[("files", ("new.jpg", extra, "image/jpeg"))],
+            data={"refs": existing},
+        )
+    assert response.status_code == 404
+    images = baseline_client.get("/api/_state").json()["images"]
+    assert [row["ref"] for row in images] == [existing]
+    assert baseline_client.get("/api/_state").json()["inferences"] == []

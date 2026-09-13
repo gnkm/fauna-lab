@@ -27,6 +27,7 @@ from faunalab.domain.images import (
     MAX_IMAGE_BYTES,
     UnsupportedImageError,
     decode_and_thumbnail,
+    thumb_relpath,
 )
 from faunalab.domain.inferences import (
     MAX_INFERENCE_IMAGES,
@@ -36,7 +37,7 @@ from faunalab.domain.inferences import (
 )
 from faunalab.domain.ingest import ingest_image_bytes
 from faunalab.ml.runtime import BaselineRuntime
-from faunalab.persist.files import resolve_under
+from faunalab.persist.files import remove_if_present, resolve_under
 from faunalab.persist.store import (
     ImageNotFoundError,
     ImageRow,
@@ -128,7 +129,10 @@ async def _parse_json_refs(request: Request) -> list[str]:
         body = InferenceCreateJson.model_validate(payload)
     except ValidationError as exc:
         raise error_for_code("validation_error", "要求の内容が不正です。") from exc
-    return [item.strip() for item in body.refs]
+    refs = [item.strip() for item in body.refs]
+    if any(not item for item in refs):
+        raise error_for_code("validation_error", "refs に空の値が含まれています。")
+    return refs
 
 
 async def _parse_multipart(
@@ -187,6 +191,20 @@ def _require_count(file_count: int, ref_count: int) -> None:
             "validation_error",
             "1 回の要求で処理できる画像は 20 枚までです。",
         )
+
+
+def _rollback_created_images(store: Store, refs: list[str]) -> None:
+    """推論要求が失敗したとき、この要求で新規登録した画像だけを戻す。"""
+
+    for ref in refs:
+        row = store.delete_image(ref)
+        if row is None:
+            continue
+        for relative in (row.path, thumb_relpath(row.sha256)):
+            try:
+                remove_if_present(store.data_dir, relative)
+            except (OSError, ValueError):
+                pass
 
 
 @router.get("/api/inferences")
@@ -248,7 +266,17 @@ async def create_inferences(request: Request) -> dict[str, Any]:
     created_at = utc_now_z()
     image_refs: list[str] = []
     pil_images: list[Image.Image] = []
+    created_image_refs: list[str] = []
     try:
+        for data, _filename in files:
+            pil_images.append(_pil_from_bytes(data))
+        for row in ref_rows:
+            pil_images.append(_pil_from_store(store, row))
+
+        started = time.perf_counter()
+        folded = runtime.infer_images(pil_images)
+        duration_ms = int((time.perf_counter() - started) * 1000)
+
         for data, filename in files:
             ingested = ingest_image_bytes(
                 store,
@@ -266,14 +294,11 @@ async def create_inferences(request: Request) -> dict[str, Any]:
                     )
                 raise error_for_code(code, "画像を登録できませんでした。")
             image_refs.append(ingested.ref)
-            pil_images.append(_pil_from_bytes(data))
+            if ingested.created:
+                created_image_refs.append(ingested.ref)
         for row in ref_rows:
             image_refs.append(row.ref)
-            pil_images.append(_pil_from_store(store, row))
 
-        started = time.perf_counter()
-        folded = runtime.infer_images(pil_images)
-        duration_ms = int((time.perf_counter() - started) * 1000)
         records: list[InferenceNew] = []
         for image_ref, result in zip(image_refs, folded, strict=True):
             mass = other_mass_for_model(builtin=model.builtin, folded=result)
@@ -303,6 +328,9 @@ async def create_inferences(request: Request) -> dict[str, Any]:
         except ModelNotFoundError as exc:
             raise no_active_model() from exc
         return {"items": [inference_to_api(row) for row in saved]}
+    except Exception:
+        _rollback_created_images(store, created_image_refs)
+        raise
     finally:
         for image in pil_images:
             image.close()
