@@ -36,7 +36,14 @@ from faunalab.domain.inferences import (
     ranked_scores,
 )
 from faunalab.domain.ingest import ingest_image_bytes
+from faunalab.domain.models import TRAINED_ONNX_NAME
+from faunalab.ml.predict import load_onnx_session
 from faunalab.ml.runtime import BaselineRuntime
+from faunalab.ml.trained import (
+    infer_trained_images,
+    is_embedding_head,
+    load_trained_session,
+)
 from faunalab.persist.files import remove_if_present, resolve_under
 from faunalab.persist.store import (
     ImageNotFoundError,
@@ -44,6 +51,7 @@ from faunalab.persist.store import (
     InferenceNew,
     InferenceRow,
     ModelNotFoundError,
+    ModelRow,
     Store,
 )
 from faunalab.settings import Settings
@@ -244,7 +252,7 @@ async def create_inferences(request: Request) -> dict[str, Any]:
     if model is None:
         raise no_active_model()
     runtime = _runtime(request)
-    if not model.builtin or runtime is None:
+    if model.builtin and runtime is None:
         raise baseline_unavailable()
 
     for data, _filename in files:
@@ -274,7 +282,12 @@ async def create_inferences(request: Request) -> dict[str, Any]:
             pil_images.append(_pil_from_store(store, row))
 
         started = time.perf_counter()
-        folded = runtime.infer_images(pil_images)
+        if model.builtin:
+            if runtime is None:
+                raise baseline_unavailable()
+            folded = runtime.infer_images(pil_images)
+        else:
+            folded = _infer_trained_model(store, model, pil_images, request)
         duration_ms = int((time.perf_counter() - started) * 1000)
 
         for data, filename in files:
@@ -334,3 +347,33 @@ async def create_inferences(request: Request) -> dict[str, Any]:
     finally:
         for image in pil_images:
             image.close()
+
+
+def _infer_trained_model(
+    store: Store,
+    model: ModelRow,
+    images: list[Image.Image],
+    request: Request,
+) -> list[Any]:
+    relative = model.artifact_dir or f"models/{model.version}"
+    try:
+        directory = resolve_under(store.data_dir, relative)
+    except ValueError as exc:
+        raise error_for_code(
+            "internal_error",
+            "モデル成果物を読み込めません。",
+        ) from exc
+    onnx_path = directory / TRAINED_ONNX_NAME
+    if not onnx_path.is_file():
+        raise error_for_code(
+            "internal_error",
+            "モデル成果物を読み込めません。",
+        )
+    session = load_trained_session(onnx_path)
+    embedding_session = None
+    if is_embedding_head(session):
+        inspection = request.app.state.baseline
+        if not inspection.ok or inspection.model_path is None:
+            raise baseline_unavailable()
+        embedding_session = load_onnx_session(inspection.model_path)
+    return infer_trained_images(session, images, embedding_session=embedding_session)

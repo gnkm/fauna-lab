@@ -7,7 +7,7 @@
 | anyio             | 4.15.1    | MIT                                                |
 | certifi           | 2026.7.22 | Mozilla Public License 2.0 (MPL 2.0)               |
 | click             | 8.5.0     | BSD-3-Clause                                       |
-| coverage          | 7.16.0    | Apache-2.0                                         |
+| coverage          | 7.16.1    | Apache-2.0                                         |
 | fastapi           | 0.141.1   | MIT                                                |
 | flatbuffers       | 25.12.19  | Apache Software License                            |
 | h11               | 0.16.0    | MIT License                                        |
@@ -16,8 +16,10 @@
 | httpx             | 0.28.1    | BSD License                                        |
 | idna              | 3.19      | BSD-3-Clause                                       |
 | iniconfig         | 2.3.0     | MIT                                                |
+| ml_dtypes         | 0.6.0     | Apache-2.0                                         |
 | nodeenv           | 1.10.0    | BSD License                                        |
 | numpy             | 2.5.3     | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
+| onnx              | 1.22.0    | Apache-2.0                                         |
 | onnxruntime       | 1.30.0    | MIT License                                        |
 | packaging         | 26.3      | Apache-2.0 OR BSD-2-Clause                         |
 | pillow            | 12.3.0    | MIT-CMU                                            |

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     model_id INTEGER REFERENCES models(id) ON DELETE SET NULL,
     params_json TEXT,
     failed_reason TEXT,
+    cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
     created_at TEXT NOT NULL,
     started_at TEXT,
     finished_at TEXT
@@ -99,6 +100,21 @@ CREATE INDEX IF NOT EXISTS jobs_created_at_ref
 
 CREATE UNIQUE INDEX IF NOT EXISTS jobs_one_running
     ON jobs (status) WHERE status = 'RUNNING';
+
+CREATE TABLE IF NOT EXISTS job_epoch_logs (
+    id INTEGER PRIMARY KEY,
+    job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    epoch INTEGER NOT NULL,
+    train_loss REAL NOT NULL,
+    val_loss REAL NOT NULL,
+    val_accuracy REAL NOT NULL,
+    duration_seconds REAL NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (job_id, epoch)
+);
+
+CREATE INDEX IF NOT EXISTS job_epoch_logs_job_epoch
+    ON job_epoch_logs (job_id, epoch);
 
 CREATE TABLE IF NOT EXISTS inferences (
     id INTEGER PRIMARY KEY,

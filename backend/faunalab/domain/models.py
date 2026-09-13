@@ -8,6 +8,11 @@ from pathlib import Path
 from faunalab.ml.baseline import BaselineInspection
 from faunalab.ml.metrics import Metrics, compute_metrics
 from faunalab.ml.predict import load_onnx_session, predict_class_ids
+from faunalab.ml.trained import (
+    infer_trained_paths,
+    is_embedding_head,
+    load_trained_session,
+)
 from faunalab.persist.files import resolve_under
 from faunalab.persist.store import ImageRow, ModelRow, Store
 
@@ -139,8 +144,13 @@ def _predict_split(
             class_map=baseline.class_map,
         )
     onnx_path = _trained_onnx_path(store, model)
-    session = load_onnx_session(onnx_path)
-    return predict_class_ids(session, paths, builtin=False)
+    session = load_trained_session(onnx_path)
+    embedding_session = None
+    if is_embedding_head(session):
+        if not baseline.ok or baseline.model_path is None:
+            raise BaselineUnavailableError
+        embedding_session = load_onnx_session(baseline.model_path)
+    return infer_trained_paths(session, paths, embedding_session=embedding_session)
 
 
 def _trained_onnx_path(store: Store, model: ModelRow) -> Path:
