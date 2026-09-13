@@ -1187,7 +1187,7 @@ components:
           $ref: "#/components/schemas/Ref"
     Image:
       type: object
-      required: [ref, sha256, split, label, suggestion]
+      required: [ref, sha256, split, label, suggestion, original_name, size_bytes, width, height, created_at, media_type]
       properties:
         ref:
           $ref: "#/components/schemas/Ref"
@@ -1203,6 +1203,23 @@ components:
           oneOf:
             - $ref: "#/components/schemas/SuggestionPayload"
             - type: "null"
+        original_name:
+          type: string
+          description: 由来するファイル名。値として保持し、記憶域パスには使わない。
+        size_bytes:
+          type: integer
+          minimum: 1
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+        media_type:
+          type: string
+          enum: [image/jpeg, image/png]
     UploadItem:
       type: object
       required: [filename, ok]
