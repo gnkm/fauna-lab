@@ -59,19 +59,22 @@ def register_trained_model(
     ref: str | None = None,
     created_at: str,
     metrics: Metrics | None = None,
+    artifact_bytes: bytes | None = None,
 ) -> ModelRow:
     """Insert the next trained version (1, 2, …; never reused).
 
-    Metrics stay `null` when the caller does not pass them. F014 should
-    write `models/{version}/model.onnx` then, if the test split is not
-    empty, call `evaluate_model`. An empty test split is success with
-    `metrics=null` (REQ-F-MDL-002) — do not call `evaluate_model` then.
+    Metrics stay `null` when the caller does not pass them. Pass
+    `artifact_bytes` to write `model.onnx` before the row is visible.
+    Training jobs should use `Store.complete_training_success` so cancel
+    and SUCCEEDED share that lock. An empty test split is success with
+    `metrics=null` (REQ-F-MDL-002).
     """
 
     return store.insert_trained_model(
         ref=ref or str(uuid.uuid4()),
         created_at=created_at,
         metrics=metrics,
+        artifact_bytes=artifact_bytes,
     )
 
 

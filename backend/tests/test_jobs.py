@@ -34,9 +34,13 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
-from faunalab.persist.store import DB_FILENAME, Store
+from faunalab.api.jobs import JobCreateRequest
+from faunalab.domain.jobs import JobParams
+from faunalab.jobs.supervisor import start_worker, stop_worker
+from faunalab.persist.store import DB_FILENAME, TRAINED_ONNX_NAME, Store
 from faunalab.settings import Settings, get_settings
 from PIL import Image
+from pydantic import ValidationError
 
 REPO_ASSETS = Path(__file__).resolve().parents[2] / "assets"
 TERMINAL = frozenset({"SUCCEEDED", "FAILED", "CANCELED"})
@@ -622,3 +626,110 @@ def test_api_process_does_not_import_torch(tmp_path: Path) -> None:
         text=True,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_job_create_rejects_out_of_range_params() -> None:
+    with pytest.raises(ValidationError):
+        JobCreateRequest(epochs=1001)
+    with pytest.raises(ValidationError):
+        JobCreateRequest(batch_size=513)
+    with pytest.raises(ValidationError):
+        JobCreateRequest(learning_rate=float("inf"))
+    with pytest.raises(ValidationError):
+        JobCreateRequest(learning_rate=float("nan"))
+    with pytest.raises(ValidationError):
+        JobCreateRequest(learning_rate=0)
+
+
+def test_job_create_http_rejects_too_many_epochs(
+    baseline_client: TestClient,
+) -> None:
+    response = baseline_client.post("/api/jobs", json={"epochs": 1001})
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+
+
+def test_complete_training_writes_onnx_before_row(tmp_path: Path) -> None:
+    store = Store(tmp_path / "data")
+    store.initialize()
+    store.insert_job(
+        ref="aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeee1",
+        total_epochs=1,
+        params_json=JobParams(epochs=1).to_json(),
+        created_at="2026-09-13T00:00:00Z",
+    )
+    claimed = store.claim_next_queued()
+    assert claimed is not None
+    payload = b"onnx-artifact"
+    outcome = store.complete_training_success(
+        claimed.ref,
+        artifact_bytes=payload,
+        metrics=None,
+        created_at="2026-09-13T00:00:01Z",
+    )
+    assert outcome == "succeeded"
+    finished = store.get_job(claimed.ref)
+    assert finished is not None
+    assert finished.status == "SUCCEEDED"
+    assert finished.model_ref is not None
+    model = store.get_model(finished.model_ref)
+    assert model is not None
+    onnx_path = store.data_dir / (model.artifact_dir or "models/1") / TRAINED_ONNX_NAME
+    assert onnx_path.read_bytes() == payload
+    store.close()
+
+
+def test_complete_training_honors_cancel(tmp_path: Path) -> None:
+    store = Store(tmp_path / "data")
+    store.initialize()
+    store.insert_job(
+        ref="aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeee2",
+        total_epochs=1,
+        params_json=JobParams(epochs=1).to_json(),
+        created_at="2026-09-13T00:00:00Z",
+    )
+    claimed = store.claim_next_queued()
+    assert claimed is not None
+    store.request_cancel(claimed.ref)
+    before = [row.ref for row in store.list_models()]
+    outcome = store.complete_training_success(
+        claimed.ref,
+        artifact_bytes=b"should-not-write",
+        metrics=None,
+        created_at="2026-09-13T00:00:01Z",
+    )
+    assert outcome == "canceled"
+    finished = store.get_job(claimed.ref)
+    assert finished is not None
+    assert finished.status == "CANCELED"
+    assert finished.model_ref is None
+    assert [row.ref for row in store.list_models()] == before
+    store.close()
+
+
+def test_supervisor_restarts_exited_child(tmp_path: Path) -> None:
+    marker = tmp_path / "runs"
+    script = (
+        "import pathlib, time\n"
+        f"p = pathlib.Path({str(marker)!r})\n"
+        "n = int(p.read_text()) if p.exists() else 0\n"
+        "p.write_text(str(n + 1))\n"
+        "if n == 0:\n"
+        "    raise SystemExit(0)\n"
+        "time.sleep(30)\n"
+    )
+    handle = start_worker(
+        tmp_path,
+        tmp_path,
+        argv=[sys.executable, "-c", script],
+        poll_seconds=0.1,
+    )
+    try:
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if marker.exists() and int(marker.read_text()) >= 2:
+                break
+            time.sleep(0.05)
+        assert int(marker.read_text()) >= 2
+    finally:
+        stop_worker(handle)

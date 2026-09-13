@@ -413,7 +413,7 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 
 ### 7.3 学習
 
-学習は同一コンテナ内の **別プロセス**（`python -m faunalab.jobs.worker`）で動かす。API プロセスは PyTorch を import しない（REQ-PERF-006、I-TRN-003）。ワーカは常に 1 つ。`POST /api/jobs` は `QUEUED` を書いて 201 を返し、完了を待たない。
+学習は同一コンテナ内の **別プロセス**（`python -m faunalab.jobs.worker`）で動かす。API プロセスは PyTorch を import しない（REQ-PERF-006、I-TRN-003）。ワーカは常に 1 つ。子プロセスが落ちたら監視スレッドが再起動し、残存 RUNNING はワーカ起動時に FAILED（プロセス中断）へ戻す。`POST /api/jobs` は `QUEUED` を書いて 201 を返し、完了を待たない。
 
 - **ベースライン利用あり（既定）**: 共通前処理（訓練時は拡張を足す）のあと、配布 ONNX の `embedding`（1280 次元）を固定抽出し、線形分類ヘッドだけを NumPy で学習する。成功時ヘッドを `model.onnx` に書き出す。推論はヘッド ONNX の前段で版 0 の embedding を取る（I-TRN-001）。
 - **ベースライン利用なし**: 小型 CNN を CPU で学習し、画像入力・8 クラス `logits` の ONNX を書き出す。資産が無い起動でもこの経路は動く。
@@ -606,7 +606,7 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超 JPEG でステータスが異�
 8.2 は試験再現のため `_state` の配列を昇順に固定する。プログラムインタフェースは利用者が新しいものを見る用途なので、`GET /api/jobs` と `GET /api/inferences` は `created_at` 降順、同刻は `ref` 降順とする。`GET /api/images` は 8.2 と同じ昇順。`GET /api/models` は版番号降順。いずれも第二キーまで含めて一意（REQ-API-006）。
 
 **I-MDL-001 学習済モデルの登録契約（F014）**
-学習ジョブ（F014）はモデル版を自ら INSERT しない。成功時は `faunalab.domain.models.register_trained_model` を呼ぶ。この関数が版番号（1 から連番、`MAX(version)+1`、削除済も含めて再利用しない）、有効化規則（REQ-F-MDL-004: 有効が無い、または有効が版 0 のときだけ自動有効化）、成果物ディレクトリ `models/{version}/` を担う。版番号の決定・ディレクトリ作成・自動有効化・INSERT は同一ロック／トランザクションで行い、ディレクトリ作成に失敗したら行を残さない。指標は呼び出し側が渡さない限り `null`。試験分割が空ならそのまま成功（REQ-F-MDL-002）。空でなければ F014 が `model.onnx` を書いたあと `evaluate_model` を呼ぶ。空のときに `evaluate_model` を呼んではならない（REQ-F-MDL-009 は再評価を失敗させる）。F014 は試験分割があるとき、登録前に work の ONNX で指標を計算して `register_trained_model(..., metrics=...)` に渡してよい。
+学習ジョブ（F014）はモデル版を自ら INSERT しない。成功時は `faunalab.persist.store.Store.complete_training_success` が `register_trained_model` と同じ登録契約（版番号は 1 から連番、`MAX(version)+1`、削除済も含めて再利用しない、REQ-F-MDL-004 の自動有効化、成果物ディレクトリ `models/{version}/`）を同一ロックで実行する。取消要求の確認、`model.onnx` の配置、INSERT、ジョブ `SUCCEEDED` を一連にする。成果物の書き込みに失敗したら行を残さない。指標は呼び出し側が渡さない限り `null`。試験分割が空ならそのまま成功（REQ-F-MDL-002）。空でなければ登録前に work の ONNX で指標を計算して渡してよい。空のときに `evaluate_model` を呼んではならない（REQ-F-MDL-009 は再評価を失敗させる）。F013 の直接登録は引き続き `register_trained_model` を使う。
 
 **I-MDL-002 モデル削除は論理削除**
 `DELETE /api/models/{ref}` は行を残し `deleted=1` にする。版番号の UNIQUE が残るので再利用しない。`_state` と GET は `deleted=0` だけを出す。成果物ディレクトリを先に除去し、成功してから論理削除する。除去が失敗したらモデルは可視のままなので DELETE を再試行できる。状態確認・成果物削除・論理削除は有効化と同じストアロックで一連の操作にする。この間に別リクエストが有効化しても、成果物だけ消えて有効行が残ることはない。`inferences.model_id` の FK は残るので推論履歴の `model_ref` は変わらない（REQ-F-MDL-007）。有効モデルと版 0 は 409 `model_not_deletable`。
@@ -626,7 +626,8 @@ VER-F-TRN-001〜007 と偶然水準の確認は、エポック数を減らした
 **I-TRN-003 学習の数値計算は NumPy**
 ARCHITECTURE は学習を PyTorch CPU とする。PyPI の `torch` 車輪は NVIDIA CUDA 再配布物を依存に含み、REQ-CON-003 の OSI 方針と衝突する。CPU 専用 index（`download.pytorch.org`）はロック時に到達できない。学習ワーカは NumPy で線形ヘッドと小型 CNN を訓練し、`onnx`（Apache-2.0）で opset 13 の成果物を書く。API は引き続き ONNX Runtime のみ。PyTorch は import しない。
 
-**I-IMG-001 単一ファイルの HTTP ステータス**
+**I-TRN-004 学習パラメータの上限**
+SRS はエポック数の上限を定めない。単一ワーカを極端な値で占有しないよう、プログラムインタフェースは `epochs` を 1〜1000、`batch_size` を 1〜512、`learning_rate` を正の有限値に限る。
 
 **I-IMG-001 単一ファイルの HTTP ステータス**
 VER-F-IMG-001 は偽装テキストと 10 MiB 超でステータスが異なることを求める。複数アップロードの部分成功は 200 に固定するため、当該検証はファイルを 1 件ずつ送る。件別 `code` は同じ語彙（`unsupported_media_type` / `payload_too_large`）を使う。

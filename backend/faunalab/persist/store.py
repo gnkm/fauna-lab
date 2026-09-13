@@ -6,6 +6,7 @@ import json
 import logging
 import sqlite3
 import threading
+import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -14,10 +15,15 @@ from pathlib import Path
 from typing import Any, Literal
 
 from faunalab.domain.classes import CLASS_IDS, SPLIT_IDS, SYSTEM_CLASSES
-from faunalab.persist.files import ensure_dir, remove_tree_if_present
+from faunalab.persist.files import (
+    ensure_dir,
+    remove_tree_if_present,
+    write_bytes,
+)
 from faunalab.persist.schema import SCHEMA_SQL, SCHEMA_VERSION
 
 IN_QUERY_CHUNK = 500
+TRAINED_ONNX_NAME = "model.onnx"
 
 LOGGER = logging.getLogger("faunalab.persist")
 
@@ -178,6 +184,13 @@ class Store:
                     conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
                 self._seed_classes(conn)
                 self._ensure_job_cancel_column(conn)
+                self._recover_interrupted_jobs(conn)
+
+    def fail_interrupted_jobs(self) -> None:
+        """Mark leftover RUNNING jobs FAILED. Safe for a respawned worker."""
+
+        with self._locked() as conn:
+            with conn:
                 self._recover_interrupted_jobs(conn)
 
     def close(self) -> None:
@@ -772,7 +785,7 @@ class Store:
                     (reason, now, ref),
                 )
 
-    def succeed_job(self, ref: str, model_ref: str) -> None:
+    def succeed_job(self, ref: str, model_ref: str) -> bool:
         now = _utc_now_z()
         with self._locked() as conn:
             with conn:
@@ -782,16 +795,88 @@ class Store:
                 ).fetchone()
                 if model is None:
                     raise RuntimeError(f"model {model_ref} missing at job success")
-                conn.execute(
+                cursor = conn.execute(
                     """
                     UPDATE jobs
                     SET status = 'SUCCEEDED',
                         model_id = ?,
                         finished_at = ?
-                    WHERE ref = ? AND status = 'RUNNING'
+                    WHERE ref = ?
+                      AND status = 'RUNNING'
+                      AND cancel_requested = 0
                     """,
                     (int(model["id"]), now, ref),
                 )
+                return cursor.rowcount == 1
+
+    def complete_training_success(
+        self,
+        ref: str,
+        *,
+        artifact_bytes: bytes,
+        metrics: Any,
+        created_at: str,
+        model_ref: str | None = None,
+    ) -> Literal["succeeded", "canceled"]:
+        """Register the trained model, write ONNX, and succeed the job.
+
+        Cancel, artifact write, INSERT, and SUCCEEDED share one lock so a
+        first trained version cannot become active without `model.onnx`, and
+        a late cancel cannot lose to SUCCEEDED.
+        """
+
+        now = _utc_now_z()
+        created_dir: str | None = None
+        try:
+            with self._locked() as conn:
+                with conn:
+                    row = conn.execute(
+                        """
+                        SELECT status, cancel_requested FROM jobs WHERE ref = ?
+                        """,
+                        (ref,),
+                    ).fetchone()
+                    if row is None or str(row["status"]) != "RUNNING":
+                        return "canceled"
+                    if int(row["cancel_requested"]) == 1:
+                        conn.execute(
+                            """
+                            UPDATE jobs
+                            SET status = 'CANCELED', finished_at = ?
+                            WHERE ref = ? AND status = 'RUNNING'
+                            """,
+                            (now, ref),
+                        )
+                        return "canceled"
+                    new_ref = model_ref or str(uuid.uuid4())
+                    created_dir = self._insert_trained_model_locked(
+                        conn,
+                        ref=new_ref,
+                        created_at=created_at,
+                        metrics=metrics,
+                        artifact_bytes=artifact_bytes,
+                    )
+                    model = conn.execute(
+                        "SELECT id FROM models WHERE ref = ? AND deleted = 0",
+                        (new_ref,),
+                    ).fetchone()
+                    if model is None:
+                        raise RuntimeError("trained model missing after insert")
+                    conn.execute(
+                        """
+                        UPDATE jobs
+                        SET status = 'SUCCEEDED',
+                            model_id = ?,
+                            finished_at = ?
+                        WHERE ref = ? AND status = 'RUNNING'
+                        """,
+                        (int(model["id"]), now, ref),
+                    )
+        except Exception:
+            if created_dir is not None:
+                remove_tree_if_present(self.data_dir, created_dir)
+            raise
+        return "succeeded"
 
     def record_epoch(
         self,
@@ -996,48 +1081,24 @@ class Store:
         ref: str,
         created_at: str,
         metrics: Any = None,
+        artifact_bytes: bytes | None = None,
     ) -> ModelRow:
         """Allocate the next version, create its directory, then insert.
 
         Auto-activation (REQ-F-MDL-004) is decided in this same transaction.
-        If the directory cannot be created, no row is written.
+        If the directory or artifact cannot be created, no row is written.
         """
 
-        metrics_json = None if metrics is None else json.dumps(metrics)
         created_dir: str | None = None
         try:
             with self._locked() as conn:
                 with conn:
-                    max_row = conn.execute(
-                        "SELECT MAX(version) AS m FROM models"
-                    ).fetchone()
-                    raw_max = max_row["m"] if max_row is not None else None
-                    version = max(1, (0 if raw_max is None else int(raw_max)) + 1)
-                    artifact_dir = f"models/{version}"
-                    ensure_dir(self.data_dir, artifact_dir)
-                    created_dir = artifact_dir
-                    active = conn.execute(
-                        f"{_MODEL_SELECT} WHERE active = 1 AND deleted = 0 LIMIT 1"
-                    ).fetchone()
-                    activate = active is None or bool(active["builtin"])
-                    if activate:
-                        conn.execute("UPDATE models SET active = 0 WHERE active = 1")
-                    conn.execute(
-                        """
-                        INSERT INTO models (
-                            ref, version, builtin, active,
-                            metrics_json, artifact_dir, created_at, deleted
-                        )
-                        VALUES (?, ?, 0, ?, ?, ?, ?, 0)
-                        """,
-                        (
-                            ref,
-                            version,
-                            1 if activate else 0,
-                            metrics_json,
-                            artifact_dir,
-                            created_at,
-                        ),
+                    created_dir = self._insert_trained_model_locked(
+                        conn,
+                        ref=ref,
+                        created_at=created_at,
+                        metrics=metrics,
+                        artifact_bytes=artifact_bytes,
                     )
         except Exception:
             if created_dir is not None:
@@ -1047,6 +1108,56 @@ class Store:
         if created is None:
             raise RuntimeError("failed to persist trained model")
         return created
+
+    def _insert_trained_model_locked(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        ref: str,
+        created_at: str,
+        metrics: Any,
+        artifact_bytes: bytes | None,
+    ) -> str:
+        metrics_json = None if metrics is None else json.dumps(metrics)
+        max_row = conn.execute("SELECT MAX(version) AS m FROM models").fetchone()
+        raw_max = max_row["m"] if max_row is not None else None
+        version = max(1, (0 if raw_max is None else int(raw_max)) + 1)
+        artifact_dir = f"models/{version}"
+        ensure_dir(self.data_dir, artifact_dir)
+        try:
+            if artifact_bytes is not None:
+                write_bytes(
+                    self.data_dir,
+                    f"{artifact_dir}/{TRAINED_ONNX_NAME}",
+                    artifact_bytes,
+                )
+            active = conn.execute(
+                f"{_MODEL_SELECT} WHERE active = 1 AND deleted = 0 LIMIT 1"
+            ).fetchone()
+            activate = active is None or bool(active["builtin"])
+            if activate:
+                conn.execute("UPDATE models SET active = 0 WHERE active = 1")
+            conn.execute(
+                """
+                INSERT INTO models (
+                    ref, version, builtin, active,
+                    metrics_json, artifact_dir, created_at, deleted
+                )
+                VALUES (?, ?, 0, ?, ?, ?, ?, 0)
+                """,
+                (
+                    ref,
+                    version,
+                    1 if activate else 0,
+                    metrics_json,
+                    artifact_dir,
+                    created_at,
+                ),
+            )
+        except Exception:
+            remove_tree_if_present(self.data_dir, artifact_dir)
+            raise
+        return artifact_dir
 
     def update_metrics(self, ref: str, metrics: Any) -> ModelRow | None:
         with self._locked() as conn:

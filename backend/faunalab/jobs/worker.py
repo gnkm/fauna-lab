@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image
 
 from faunalab.domain.jobs import JobCanceled, JobParams
-from faunalab.domain.models import TRAINED_ONNX_NAME, register_trained_model
+from faunalab.domain.models import TRAINED_ONNX_NAME
 from faunalab.ml.baseline import inspect_baseline_assets
 from faunalab.ml.metrics import compute_metrics
 from faunalab.ml.predict import load_onnx_session
@@ -21,7 +21,7 @@ from faunalab.ml.trained import (
     is_embedding_head,
     load_trained_session,
 )
-from faunalab.persist.files import remove_tree_if_present, resolve_under, write_bytes
+from faunalab.persist.files import remove_tree_if_present, resolve_under
 from faunalab.persist.store import ImageRow, Store
 
 LOGGER = logging.getLogger("faunalab.jobs.worker")
@@ -48,6 +48,7 @@ def main(argv: list[str] | None = None) -> int:
     assets_dir = Path(args[1])
     store = Store(data_dir)
     store.open_existing()
+    store.fail_interrupted_jobs()
     inspection = inspect_baseline_assets(assets_dir)
     try:
         while True:
@@ -142,16 +143,14 @@ def _run_claimed(
         metrics = _maybe_test_metrics(store, dest, baseline_path)
         if should_cancel():
             raise JobCanceled
-        created = register_trained_model(
-            store, created_at=_utc_now_z(), metrics=metrics
+        outcome = store.complete_training_success(
+            ref,
+            artifact_bytes=dest.read_bytes(),
+            metrics=metrics,
+            created_at=_utc_now_z(),
         )
-        artifact_dir = created.artifact_dir or f"models/{created.version}"
-        write_bytes(
-            store.data_dir,
-            f"{artifact_dir}/{TRAINED_ONNX_NAME}",
-            dest.read_bytes(),
-        )
-        store.succeed_job(ref, created.ref)
+        if outcome == "canceled":
+            raise JobCanceled
     finally:
         for image in train_images + val_images:
             image.close()

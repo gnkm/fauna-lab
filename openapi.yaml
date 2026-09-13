@@ -1386,10 +1386,12 @@ components:
         epochs:
           type: integer
           minimum: 1
+          maximum: 1000
           default: 10
         batch_size:
           type: integer
           minimum: 1
+          maximum: 512
           default: 32
         learning_rate:
           type: number

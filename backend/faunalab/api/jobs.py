@@ -17,6 +17,8 @@ from faunalab.domain.jobs import (
     DEFAULT_LEARNING_RATE,
     DEFAULT_SEED,
     DEFAULT_USE_BASELINE,
+    MAX_BATCH_SIZE,
+    MAX_EPOCHS,
     BaselineUnavailableError,
     JobNotCancelableError,
     JobNotFoundError,
@@ -32,9 +34,11 @@ router = APIRouter()
 
 class JobCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    epochs: int = Field(default=DEFAULT_EPOCHS, ge=1)
-    batch_size: int = Field(default=DEFAULT_BATCH_SIZE, ge=1)
-    learning_rate: float = Field(default=DEFAULT_LEARNING_RATE, gt=0)
+    epochs: int = Field(default=DEFAULT_EPOCHS, ge=1, le=MAX_EPOCHS)
+    batch_size: int = Field(default=DEFAULT_BATCH_SIZE, ge=1, le=MAX_BATCH_SIZE)
+    learning_rate: float = Field(
+        default=DEFAULT_LEARNING_RATE, gt=0, allow_inf_nan=False
+    )
     seed: int = DEFAULT_SEED
     augmentation: bool = DEFAULT_AUGMENTATION
     use_baseline: bool = DEFAULT_USE_BASELINE
