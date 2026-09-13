@@ -48,6 +48,8 @@ def test_stats_exclude_suggestions_from_labeled(
     assert set(body["per_class"]) == set(CLASS_IDS)
     assert body["per_split"]["unassigned"] == 3
     assert body["active_model_ref"] is None
+    assert body["active_model"] is None
+    assert body["baseline_registered"] is False
     assert body["has_active_job"] is False
 
 
@@ -83,3 +85,30 @@ def _plant_suggestion(settings: Settings, image_ref: str, class_id: str) -> None
         conn.commit()
     finally:
         conn.close()
+
+
+def test_stats_distinguishes_baseline_active_model(
+    client: TestClient, settings: Settings
+) -> None:
+    conn = sqlite3.connect(settings.data_dir / DB_FILENAME)
+    conn.execute("PRAGMA foreign_keys = ON")
+    try:
+        conn.execute(
+            """
+            INSERT INTO models (ref, version, builtin, active, created_at)
+            VALUES (?, 0, 1, 1, '2024-01-01T00:00:00Z')
+            """,
+            ("11111111-1111-4111-8111-111111111111",),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    body = client.get("/api/stats").json()
+    assert body["baseline_registered"] is True
+    assert body["active_model_ref"] == "11111111-1111-4111-8111-111111111111"
+    assert body["active_model"] == {
+        "ref": "11111111-1111-4111-8111-111111111111",
+        "version": 0,
+        "builtin": True,
+    }

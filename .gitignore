@@ -7,6 +7,10 @@ node_modules/
 .venv/
 backend/.venv/
 web/dist/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 **/__pycache__/
 **/*.py[cod]
 .pytest_cache/

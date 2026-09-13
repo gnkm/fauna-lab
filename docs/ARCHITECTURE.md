@@ -28,6 +28,7 @@
 | 実行環境 | **Podman**（ローカルおよび提出）。単一コマンドは Compose |
 | Cloud Agent | 同一 OCI イメージを **Docker Compose** で起動する。Podman は使わない |
 | 学習の計算 | CPU で完結させる。GPU があれば使ってよいが必須ではない |
+| Web UI 画面 URL | `/` 概況、`/images` 画像、`/annotate` アノテーション、`/splits` 分割、`/train` 学習、`/models` モデル、`/infer` 推論。詳細は `{ref}`。History API（DESIGN.md 1.4） |
 
 ---
 
@@ -308,7 +309,6 @@ data/                    # 実行時（git 対象外）
 次は意図して本 Issue で固定しない（F006 以降で扱う）。
 
 - JSON フィールドの最終集合（`openapi.yaml` 骨格の必須キー以外。F019 で実装と一致）
-- UI の画面 URL 設計、コンポーネント構成
 - pytest-cov の 70 % 閾値 enforce（F018/F019。骨格時点では計測のみ）
 
 パス・HTTP メソッド・ページネーション・誤り語彙は F006 の [`openapi.yaml`](../openapi.yaml) を正とする。SQLite 表は F007 で DESIGN.md 6.1 に固定した。

@@ -10,7 +10,6 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from faunalab.api.errors import AppError, internal_error_response, problem_response
@@ -18,6 +17,7 @@ from faunalab.api.images import router as images_router
 from faunalab.api.inferences import router as inferences_router
 from faunalab.api.labels import router as labels_router
 from faunalab.api.sample import router as sample_router
+from faunalab.api.spa import SpaStaticFiles
 from faunalab.api.splits import router as splits_router
 from faunalab.api.state import router as state_router
 from faunalab.api.stats import router as stats_router
@@ -107,7 +107,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(inferences_router)
     dist = resolved.web_dist_dir
     if dist.is_dir():
-        app.mount("/", StaticFiles(directory=dist, html=True), name="ui")
+        app.mount("/", SpaStaticFiles(directory=dist, html=True), name="ui")
     return app
 
 
