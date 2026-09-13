@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,3 +26,18 @@ SYSTEM_CLASSES: tuple[ClassSpec, ...] = (
 )
 
 CLASS_IDS: tuple[str, ...] = tuple(item.class_id for item in SYSTEM_CLASSES)
+
+ClassId = Literal[
+    "samoyed",
+    "great_pyrenees",
+    "boxer",
+    "american_bulldog",
+    "chihuahua",
+    "miniature_pinscher",
+    "pomeranian",
+    "havanese",
+]
+
+LabelSource = Literal["human", "model_suggested"]
+Split = Literal["train", "val", "test", "unassigned"]
+SPLIT_IDS: tuple[str, ...] = ("train", "val", "test", "unassigned")

@@ -6,14 +6,16 @@ import json
 import logging
 import sqlite3
 import threading
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from faunalab.domain.classes import SYSTEM_CLASSES
+from faunalab.domain.classes import CLASS_IDS, SPLIT_IDS, SYSTEM_CLASSES
 from faunalab.persist.schema import SCHEMA_SQL, SCHEMA_VERSION
+
+IN_QUERY_CHUNK = 500
 
 LOGGER = logging.getLogger("faunalab.persist")
 
@@ -52,6 +54,10 @@ class ClassRow:
 
 class DuplicateImageError(Exception):
     """SHA-256 uniqueness violation (REQ-F-IMG-006 / REQ-DATA-003)."""
+
+
+class ImageNotFoundError(Exception):
+    """A referenced image ref does not exist."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -216,6 +222,14 @@ class Store:
             ).fetchone()
         return None if row is None else _image_row(row)
 
+    def get_image_by_sha256(self, sha256: str) -> ImageRow | None:
+        with self._locked() as conn:
+            row = conn.execute(
+                f"{_IMAGE_SELECT} WHERE i.sha256 = ?",
+                (sha256,),
+            ).fetchone()
+        return None if row is None else _image_row(row)
+
     def sha256_exists(self, sha256: str) -> bool:
         with self._locked() as conn:
             row = conn.execute(
@@ -307,6 +321,150 @@ class Store:
             total = int(conn.execute(count_sql, params).fetchone()["n"])
             rows = conn.execute(page_sql, [*params, limit, offset]).fetchall()
         return [_image_row(row) for row in rows], total
+
+    def get_label(self, ref: str) -> tuple[str, str, str] | None:
+        with self._locked() as conn:
+            row = conn.execute(
+                """
+                SELECT l.class_id AS class_id,
+                       l.source AS source,
+                       l.created_at AS created_at
+                FROM images AS i
+                JOIN labels AS l ON l.image_id = i.id
+                WHERE i.ref = ?
+                """,
+                (ref,),
+            ).fetchone()
+        if row is None:
+            return None
+        return str(row["class_id"]), str(row["source"]), str(row["created_at"])
+
+    def upsert_label(
+        self, ref: str, class_id: str, source: str, assigned_at: str
+    ) -> bool:
+        with self._locked() as conn:
+            with conn:
+                row = conn.execute(
+                    "SELECT id FROM images WHERE ref = ?",
+                    (ref,),
+                ).fetchone()
+                if row is None:
+                    return False
+                _upsert_label_row(conn, int(row["id"]), class_id, source, assigned_at)
+        return True
+
+    def upsert_labels_bulk(
+        self, refs: list[str], class_id: str, source: str, assigned_at: str
+    ) -> int:
+        unique = list(dict.fromkeys(refs))
+        with self._locked() as conn:
+            with conn:
+                id_by_ref = _image_ids_by_refs(conn, unique)
+                if len(id_by_ref) != len(unique):
+                    raise ImageNotFoundError
+                for ref in unique:
+                    _upsert_label_row(
+                        conn, id_by_ref[ref], class_id, source, assigned_at
+                    )
+        return len(unique)
+
+    def delete_label(self, ref: str) -> bool | None:
+        """None if the image is missing. True if unlabeled (already or now)."""
+
+        with self._locked() as conn:
+            with conn:
+                row = conn.execute(
+                    "SELECT id FROM images WHERE ref = ?",
+                    (ref,),
+                ).fetchone()
+                if row is None:
+                    return None
+                image_id = int(row["id"])
+                conn.execute("DELETE FROM labels WHERE image_id = ?", (image_id,))
+                conn.execute(
+                    "UPDATE images SET split = 'unassigned' WHERE id = ?",
+                    (image_id,),
+                )
+        return True
+
+    def list_labeled(self) -> list[tuple[str, str]]:
+        with self._locked() as conn:
+            rows = conn.execute(
+                """
+                SELECT i.ref AS ref, l.class_id AS class_id
+                FROM images AS i
+                JOIN labels AS l ON l.image_id = i.id
+                ORDER BY i.ref ASC
+                """
+            ).fetchall()
+        return [(str(row["ref"]), str(row["class_id"])) for row in rows]
+
+    def apply_split_assignments(self, assignments: dict[str, str]) -> tuple[int, int]:
+        with self._locked() as conn:
+            with conn:
+                return _apply_split_assignments(conn, assignments)
+
+    def recompute_splits(
+        self, assign: Callable[[list[tuple[str, str]]], dict[str, str]]
+    ) -> tuple[int, int]:
+        """List labeled images and apply assignments in one lock (no TOCTOU)."""
+
+        with self._locked() as conn:
+            with conn:
+                labeled = [
+                    (str(row["ref"]), str(row["class_id"]))
+                    for row in conn.execute(
+                        """
+                        SELECT i.ref AS ref, l.class_id AS class_id
+                        FROM images AS i
+                        JOIN labels AS l ON l.image_id = i.id
+                        ORDER BY i.ref ASC
+                        """
+                    )
+                ]
+                return _apply_split_assignments(conn, assign(labeled))
+
+    def stats(self) -> dict[str, object]:
+        with self._locked() as conn:
+            image_count = int(
+                conn.execute("SELECT COUNT(*) AS n FROM images").fetchone()["n"]
+            )
+            labeled_count = int(
+                conn.execute("SELECT COUNT(*) AS n FROM labels").fetchone()["n"]
+            )
+            suggestion_count = int(
+                conn.execute("SELECT COUNT(*) AS n FROM suggestions").fetchone()["n"]
+            )
+            per_class = {class_id: 0 for class_id in CLASS_IDS}
+            for row in conn.execute(
+                "SELECT class_id, COUNT(*) AS n FROM labels GROUP BY class_id"
+            ):
+                per_class[str(row["class_id"])] = int(row["n"])
+            per_split = {split: 0 for split in SPLIT_IDS}
+            for row in conn.execute(
+                "SELECT split, COUNT(*) AS n FROM images GROUP BY split"
+            ):
+                per_split[str(row["split"])] = int(row["n"])
+            active = conn.execute(
+                "SELECT ref FROM models WHERE active = 1 LIMIT 1"
+            ).fetchone()
+            job = conn.execute(
+                """
+                SELECT 1 AS n FROM jobs
+                WHERE status IN ('QUEUED', 'RUNNING')
+                LIMIT 1
+                """
+            ).fetchone()
+        return {
+            "image_count": image_count,
+            "labeled_count": labeled_count,
+            "unlabeled_count": image_count - labeled_count,
+            "suggestion_count": suggestion_count,
+            "per_class": per_class,
+            "per_split": per_split,
+            "active_model_ref": None if active is None else str(active["ref"]),
+            "has_active_job": job is not None,
+        }
 
     def list_jobs(self) -> list[JobRow]:
         with self._locked() as conn:
@@ -494,3 +652,60 @@ def _decode_json(raw: str | None) -> Any:
     if raw is None:
         return None
     return json.loads(raw)
+
+
+def _upsert_label_row(
+    conn: sqlite3.Connection,
+    image_id: int,
+    class_id: str,
+    source: str,
+    assigned_at: str,
+) -> None:
+    conn.execute("DELETE FROM suggestions WHERE image_id = ?", (image_id,))
+    conn.execute(
+        """
+        INSERT INTO labels (image_id, class_id, source, created_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(image_id) DO UPDATE SET
+            class_id = excluded.class_id,
+            source = excluded.source,
+            created_at = excluded.created_at
+        """,
+        (image_id, class_id, source, assigned_at),
+    )
+
+
+def _image_ids_by_refs(conn: sqlite3.Connection, refs: list[str]) -> dict[str, int]:
+    found: dict[str, int] = {}
+    for start in range(0, len(refs), IN_QUERY_CHUNK):
+        chunk = refs[start : start + IN_QUERY_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        rows = conn.execute(
+            f"SELECT id, ref FROM images WHERE ref IN ({placeholders})",
+            chunk,
+        ).fetchall()
+        for row in rows:
+            found[str(row["ref"])] = int(row["id"])
+    return found
+
+
+def _apply_split_assignments(
+    conn: sqlite3.Connection, assignments: dict[str, str]
+) -> tuple[int, int]:
+    conn.execute("UPDATE images SET split = 'unassigned'")
+    if assignments:
+        conn.executemany(
+            "UPDATE images SET split = ? WHERE ref = ?",
+            [(split, ref) for ref, split in assignments.items()],
+        )
+    assigned = int(
+        conn.execute(
+            "SELECT COUNT(*) AS n FROM images WHERE split != 'unassigned'"
+        ).fetchone()["n"]
+    )
+    unassigned = int(
+        conn.execute(
+            "SELECT COUNT(*) AS n FROM images WHERE split = 'unassigned'"
+        ).fetchone()["n"]
+    )
+    return assigned, unassigned

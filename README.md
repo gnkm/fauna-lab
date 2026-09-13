@@ -79,7 +79,28 @@ pnpm export-licenses
 
 生成物は `docs/dependency-licenses-python.md` と `docs/dependency-licenses-web.txt`（`scripts/export_licenses.py`）。実行段階ではライセンス取得のためにネットへ出ない。
 
-サンプルデータの投入手順は、画像登録 API が揃ったあとの Issue で README に足す。
+### サンプル投入
+
+配布資産 `assets/sample/manifest.json` があるとき、確定ラベル（由来 `human`）付きで登録できます。
+
+```bash
+curl -sS -X POST http://127.0.0.1:8000/api/sample/import
+```
+
+`assets/sample/` が無い、またはマニフェスト／画像が読めない場合は HTTP 422（`sample_unavailable`）で失敗します。起動自体は継続します（REQ-F-SYS-003）。
+
+確定ラベルの付与・一括付与・層化分割・件数概況:
+
+```bash
+curl -sS -X PUT http://127.0.0.1:8000/api/images/<ref>/label \
+  -H 'content-type: application/json' \
+  -d '{"class_id":"samoyed","source":"human"}'
+curl -sS -X POST http://127.0.0.1:8000/api/labels/bulk \
+  -H 'content-type: application/json' \
+  -d '{"refs":["<ref>"],"class_id":"boxer"}'
+curl -sS -X POST http://127.0.0.1:8000/api/splits -H 'content-type: application/json' -d '{}'
+curl -sS http://127.0.0.1:8000/api/stats
+```
 
 ## コントリビューション
 

@@ -22,6 +22,7 @@ ERROR_STATUS: dict[str, int] = {
     "image_duplicate": 409,
     "payload_too_large": 413,
     "unsupported_media_type": 415,
+    "sample_unavailable": 422,
     "internal_error": 500,
 }
 
