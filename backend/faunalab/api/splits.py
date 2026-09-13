@@ -44,14 +44,17 @@ def _store(request: Request) -> Store:
 def create_split(request: Request, body: SplitRequest | None = None) -> dict[str, Any]:
     payload = body if body is not None else SplitRequest()
     store = _store(request)
-    assignments = stratified_assignments(
-        store.list_labeled(),
-        train_ratio=payload.train_ratio,
-        val_ratio=payload.val_ratio,
-        test_ratio=payload.test_ratio,
-        seed=payload.seed,
-    )
-    assigned_count, unassigned_count = store.apply_split_assignments(assignments)
+
+    def assign(labeled: list[tuple[str, str]]) -> dict[str, str]:
+        return stratified_assignments(
+            labeled,
+            train_ratio=payload.train_ratio,
+            val_ratio=payload.val_ratio,
+            test_ratio=payload.test_ratio,
+            seed=payload.seed,
+        )
+
+    assigned_count, unassigned_count = store.recompute_splits(assign)
     return {
         "assigned_count": assigned_count,
         "unassigned_count": unassigned_count,

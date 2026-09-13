@@ -124,6 +124,20 @@ def test_bulk_success_returns_updated_count(client: TestClient) -> None:
         assert labels[ref] == {"class_id": "chihuahua", "source": "human"}
 
 
+def test_bulk_lookup_chunks_refs(client: TestClient, monkeypatch: Any) -> None:
+    monkeypatch.setattr("faunalab.persist.store.IN_QUERY_CHUNK", 1)
+    refs = [
+        _upload(client, _jpeg((255, index, 0)), f"{index}.jpg")
+        for index in (10, 40, 80)
+    ]
+    response = client.post(
+        "/api/labels/bulk",
+        json={"refs": refs, "class_id": "boxer"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"updated_count": 3}
+
+
 def test_delete_label_resets_split(client: TestClient) -> None:
     ref = _upload(client, _jpeg((4, 5, 6)))
     client.put(f"/api/images/{ref}/label", json={"class_id": "boxer"})

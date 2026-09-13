@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Request
 
 from faunalab.api.errors import error_for_code
 from faunalab.api.state import utc_now_z
-from faunalab.domain.images import normalize_original_name
+from faunalab.domain.images import (
+    UnsupportedImageError,
+    decode_and_thumbnail,
+    normalize_original_name,
+)
 from faunalab.domain.ingest import ingest_image_bytes
 from faunalab.domain.sample import (
     SampleManifestError,
@@ -33,7 +38,7 @@ def import_sample(request: Request) -> dict[str, Any]:
         raise error_for_code("validation_error", str(exc)) from exc
 
     assigned_at = utc_now_z()
-    labeled_refs: list[str] = []
+    prepared: list[tuple[str, str, bytes]] = []
     for item in items:
         try:
             data = item.path.read_bytes()
@@ -42,7 +47,18 @@ def import_sample(request: Request) -> dict[str, Any]:
                 "sample_unavailable",
                 f"サンプル画像を読めません: {item.file}",
             ) from exc
-        filename = normalize_original_name(item.path.name)
+        try:
+            decode_and_thumbnail(data)
+        except UnsupportedImageError as exc:
+            raise error_for_code(
+                "sample_unavailable",
+                f"サンプル画像を登録できません: {item.file}",
+            ) from exc
+        prepared.append((item.file, item.class_id, data))
+
+    labeled_refs: list[str] = []
+    for file, class_id, data in prepared:
+        filename = normalize_original_name(Path(file).name)
         result = ingest_image_bytes(
             store,
             data,
@@ -53,9 +69,9 @@ def import_sample(request: Request) -> dict[str, Any]:
         if not result.ok or result.ref is None:
             raise error_for_code(
                 "sample_unavailable",
-                f"サンプル画像を登録できません: {item.file}",
+                f"サンプル画像を登録できません: {file}",
             )
-        if not store.upsert_label(result.ref, item.class_id, "human", assigned_at):
+        if not store.upsert_label(result.ref, class_id, "human", assigned_at):
             raise error_for_code(
                 "internal_error",
                 "処理中に予期しない誤りが起きました。",

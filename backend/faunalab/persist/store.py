@@ -6,7 +6,7 @@ import json
 import logging
 import sqlite3
 import threading
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +14,8 @@ from typing import Any
 
 from faunalab.domain.classes import CLASS_IDS, SPLIT_IDS, SYSTEM_CLASSES
 from faunalab.persist.schema import SCHEMA_SQL, SCHEMA_VERSION
+
+IN_QUERY_CHUNK = 500
 
 LOGGER = logging.getLogger("faunalab.persist")
 
@@ -357,14 +359,9 @@ class Store:
         unique = list(dict.fromkeys(refs))
         with self._locked() as conn:
             with conn:
-                placeholders = ",".join("?" * len(unique))
-                rows = conn.execute(
-                    f"SELECT id, ref FROM images WHERE ref IN ({placeholders})",
-                    unique,
-                ).fetchall()
-                if len(rows) != len(unique):
+                id_by_ref = _image_ids_by_refs(conn, unique)
+                if len(id_by_ref) != len(unique):
                     raise ImageNotFoundError
-                id_by_ref = {str(row["ref"]): int(row["id"]) for row in rows}
                 for ref in unique:
                     _upsert_label_row(
                         conn, id_by_ref[ref], class_id, source, assigned_at
@@ -405,23 +402,27 @@ class Store:
     def apply_split_assignments(self, assignments: dict[str, str]) -> tuple[int, int]:
         with self._locked() as conn:
             with conn:
-                conn.execute("UPDATE images SET split = 'unassigned'")
-                if assignments:
-                    conn.executemany(
-                        "UPDATE images SET split = ? WHERE ref = ?",
-                        [(split, ref) for ref, split in assignments.items()],
+                return _apply_split_assignments(conn, assignments)
+
+    def recompute_splits(
+        self, assign: Callable[[list[tuple[str, str]]], dict[str, str]]
+    ) -> tuple[int, int]:
+        """List labeled images and apply assignments in one lock (no TOCTOU)."""
+
+        with self._locked() as conn:
+            with conn:
+                labeled = [
+                    (str(row["ref"]), str(row["class_id"]))
+                    for row in conn.execute(
+                        """
+                        SELECT i.ref AS ref, l.class_id AS class_id
+                        FROM images AS i
+                        JOIN labels AS l ON l.image_id = i.id
+                        ORDER BY i.ref ASC
+                        """
                     )
-                assigned = int(
-                    conn.execute(
-                        "SELECT COUNT(*) AS n FROM images WHERE split != 'unassigned'"
-                    ).fetchone()["n"]
-                )
-                unassigned = int(
-                    conn.execute(
-                        "SELECT COUNT(*) AS n FROM images WHERE split = 'unassigned'"
-                    ).fetchone()["n"]
-                )
-        return assigned, unassigned
+                ]
+                return _apply_split_assignments(conn, assign(labeled))
 
     def stats(self) -> dict[str, object]:
         with self._locked() as conn:
@@ -600,3 +601,39 @@ def _upsert_label_row(
         """,
         (image_id, class_id, source, assigned_at),
     )
+
+
+def _image_ids_by_refs(conn: sqlite3.Connection, refs: list[str]) -> dict[str, int]:
+    found: dict[str, int] = {}
+    for start in range(0, len(refs), IN_QUERY_CHUNK):
+        chunk = refs[start : start + IN_QUERY_CHUNK]
+        placeholders = ",".join("?" * len(chunk))
+        rows = conn.execute(
+            f"SELECT id, ref FROM images WHERE ref IN ({placeholders})",
+            chunk,
+        ).fetchall()
+        for row in rows:
+            found[str(row["ref"])] = int(row["id"])
+    return found
+
+
+def _apply_split_assignments(
+    conn: sqlite3.Connection, assignments: dict[str, str]
+) -> tuple[int, int]:
+    conn.execute("UPDATE images SET split = 'unassigned'")
+    if assignments:
+        conn.executemany(
+            "UPDATE images SET split = ? WHERE ref = ?",
+            [(split, ref) for ref, split in assignments.items()],
+        )
+    assigned = int(
+        conn.execute(
+            "SELECT COUNT(*) AS n FROM images WHERE split != 'unassigned'"
+        ).fetchone()["n"]
+    )
+    unassigned = int(
+        conn.execute(
+            "SELECT COUNT(*) AS n FROM images WHERE split = 'unassigned'"
+        ).fetchone()["n"]
+    )
+    return assigned, unassigned

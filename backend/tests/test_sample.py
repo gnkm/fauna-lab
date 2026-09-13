@@ -75,6 +75,24 @@ def test_sample_import_is_idempotent(settings: Settings) -> None:
         assert len(client.get("/api/_state").json()["images"]) == 1
 
 
+def test_invalid_later_sample_does_not_persist_earlier_items(
+    settings: Settings,
+) -> None:
+    """後半が壊れていても、事前検証で前半を書き込まない。"""
+    _write_sample(
+        settings.assets_dir,
+        [
+            ("ok.jpg", "samoyed", _jpeg((200, 0, 0))),
+            ("bad.jpg", "boxer", b"not-an-image"),
+        ],
+    )
+    with TestClient(create_app(settings)) as client:
+        response = client.post("/api/sample/import")
+        assert response.status_code == 422
+        assert response.json()["code"] == "sample_unavailable"
+        assert client.get("/api/_state").json()["images"] == []
+
+
 def test_missing_sample_is_422_and_startup_continues(tmp_path: Path) -> None:
     """REQ-F-SYS-003: sample 欠落は明確な誤り。起動は継続する。"""
     get_settings.cache_clear()
