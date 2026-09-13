@@ -22,10 +22,16 @@ def resolve_under(root: Path, relative: str) -> Path:
 def write_bytes(root: Path, relative: str, data: bytes) -> Path:
     path = resolve_under(root, relative)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.tmp")
-    tmp.write_bytes(data)
-    os.chmod(tmp, _FILE_MODE)
-    tmp.replace(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{os.urandom(8).hex()}.tmp")
+    try:
+        tmp.write_bytes(data)
+        os.chmod(tmp, _FILE_MODE)
+        os.replace(tmp, path)
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
     os.chmod(path, _FILE_MODE)
     return path
 

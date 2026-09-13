@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -83,3 +84,17 @@ def test_write_rejects_path_traversal(tmp_path: Path) -> None:
     path = write_bytes(tmp_path, "images/ok.bin", b"abc")
     assert path.is_relative_to(tmp_path.resolve())
     assert path.read_bytes() == b"abc"
+
+
+def test_write_bytes_survives_parallel_same_path(tmp_path: Path) -> None:
+    relative = "images/same.bin"
+    payload = b"same-bytes"
+
+    def go() -> Path:
+        return write_bytes(tmp_path, relative, payload)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        paths = [future.result() for future in [pool.submit(go) for _ in range(16)]]
+    assert {p.read_bytes() for p in paths} == {payload}
+    leftovers = [p for p in (tmp_path / "images").iterdir() if p.name.endswith(".tmp")]
+    assert leftovers == []
