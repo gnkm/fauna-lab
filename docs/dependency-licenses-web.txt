@@ -32,6 +32,7 @@ Generated from `node_modules/.pnpm` package metadata. No network.
 | @jridgewell/sourcemap-codec | 1.6.0 | MIT |
 | @jridgewell/trace-mapping | 0.3.31 | MIT |
 | @napi-rs/lzma-linux-x64-gnu | 1.5.1 | MIT |
+| @playwright/test | 1.55.1 | Apache-2.0 |
 | @rolldown/pluginutils | 1.0.0-rc.3 | MIT |
 | @rollup/rollup-linux-x64-gnu | 4.63.2 | MIT |
 | @types/babel__core | 7.20.5 | MIT |
@@ -62,6 +63,8 @@ Generated from `node_modules/.pnpm` package metadata. No network.
 | node-releases | 2.0.55 | MIT |
 | picocolors | 1.1.1 | ISC |
 | picomatch | 4.0.7 | MIT |
+| playwright | 1.55.1 | Apache-2.0 |
+| playwright-core | 1.55.1 | Apache-2.0 |
 | postcss | 8.5.28 | MIT |
 | react | 19.3.0 | MIT |
 | react-dom | 19.3.0 | MIT |

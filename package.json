@@ -4,12 +4,14 @@
   "scripts": {
     "lint": "pnpm exec biome ci . && uv run --directory backend ruff check . && uv run --directory backend pyright",
     "test": "uv run --directory backend pytest",
+    "test:e2e": "pnpm --filter web build && pnpm exec playwright test",
     "export-licenses": "python3 scripts/export_licenses.py",
     "web:dev": "pnpm --filter web dev",
     "web:build": "pnpm --filter web build"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.8"
+    "@biomejs/biome": "2.5.8",
+    "@playwright/test": "1.55.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
