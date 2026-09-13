@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { expect, test } from "@playwright/test";
 import {
   clearImages,
@@ -17,8 +18,16 @@ test("複数ファイルを上げ、一部失敗しても他は登録される",
   ).toBeVisible();
 
   await page.getByTestId("upload-input").setInputFiles([
-    FIXTURE_JPEG_A,
-    FIXTURE_JPEG_B,
+    {
+      name: "samoyed.jpg",
+      mimeType: "image/jpeg",
+      buffer: fs.readFileSync(FIXTURE_JPEG_A),
+    },
+    {
+      name: "chihuahua.jpg",
+      mimeType: "image/jpeg",
+      buffer: fs.readFileSync(FIXTURE_JPEG_B),
+    },
     {
       name: "fake.png",
       mimeType: "text/plain",
