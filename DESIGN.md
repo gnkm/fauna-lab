@@ -376,9 +376,13 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 
 ### 7.2 推論（版 0）
 
-ONNX Runtime で `logits` を得る（HTTP 推論 API は F011。関数単位の照合は F010 で `baseline_expectations.json` に対して実施）。softmax → クラスマップ合算 → その他質量 `1 − Σ s(c)` → `Σ s(c) ≥ 1e-6` なら `s(c)/Σ s(c)`、未満なら全クラス 0.125 かつ低信頼。未収録クラス（`american_bulldog`、`havanese`）の s(c) は常に 0。補間・温度スケーリング・事前確率補正はしない。
+ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /api/inferences`（F011）。softmax → クラスマップ合算 → その他質量 `1 − Σ s(c)` → `Σ s(c) ≥ 1e-6` なら `s(c)/Σ s(c)`、未満なら全クラス 0.125 かつ低信頼。未収録クラス（`american_bulldog`、`havanese`）の s(c) は常に 0。補間・温度スケーリング・事前確率補正はしない。
 
-共通前処理は REQ-F-BASE-002 の 5 ステップ（`faunalab.ml.preprocess`）。学習・評価・推論で同一実装を使う。
+共通前処理は REQ-F-BASE-002 の 5 ステップ（`faunalab.ml.preprocess`）。学習・評価・推論で同一実装を使う。API プロセスは起動時に版 0 の ONNX セッションを載せ、PyTorch は import しない。
+
+新規ファイルは未割当・未ラベルで登録する。同一 SHA-256 が既にあれば既存画像を再利用する（I-INF-001）。1 要求の合計はファイルと `refs` を合わせて 20。有効モデルが無いときは 422 `no_active_model`。本 Issue の推論ランタイムは版 0 のみ。学習済モデルの ONNX 推論は F014。
+
+低信頼は最上位信頼度 < `FAUNALAB_CONFIDENCE_THRESHOLD`、その他質量 > `FAUNALAB_OTHER_MASS_THRESHOLD`、または一様 0.125 フォールバック。`other_mass` は版 0 で実数、学習済では `null`。
 
 ### 7.3 学習
 
@@ -579,6 +583,12 @@ SRS は圧縮後 10 MiB 以外の寸法上限を定めない。展開爆弾を 5
 
 **I-BASE-001 API 前処理は torchvision 互換の Pillow + NumPy**
 ARCHITECTURE は出典合わせのため torchvision を挙げる。REQ-PERF-006 により API プロセスは PyTorch を載せない。共通前処理は torchvision の ImageNet 評価手順（短辺 256・bilinear、中央 224、`[0,1]`、ImageNet 平均・分散）を Pillow / NumPy で実装し、学習ワーカ（F014）で torchvision を使う場合もこの関数を共有する。VER-F-BASE-001 の期待値差 0.02 以内で適合を確認する。
+
+**I-INF-001 推論の新規ファイルが既登録なら再利用する**
+REQ-F-INF-006 は履歴を残すために新規画像を登録することを求める。同一 SHA-256 が既にある場合、409 にせず既存画像へ推論履歴を付ける。新規として登録するのは未登録の内容だけである。
+
+**I-INF-002 推論は部分成功にしない**
+画像アップロードは件別結果の部分成功（I-API-001）だが、推論は 1 要求をひとまとまりとする。媒体型不正・サイズ超過・対象不在・件数超過は操作全体を失敗にする。
 
 **I-USE-001 犬種知識を前提にしない**
 人手の 1 枚ラベルを必須手順にしない。主経路はサンプル投入 → 候補生成と採用 → 学習 → 推論とする（REQ-USE-001）。

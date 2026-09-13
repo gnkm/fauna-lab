@@ -11,9 +11,11 @@ from faunalab.ml.baseline import (
 )
 from faunalab.ml.fold import FoldResult, fold_logits, softmax
 from faunalab.ml.preprocess import preprocess_batch, preprocess_image
+from faunalab.ml.runtime import BaselineRuntime, try_load_baseline_runtime
 
 __all__ = [
     "BaselineInspection",
+    "BaselineRuntime",
     "FoldResult",
     "fold_logits",
     "inspect_baseline_assets",
@@ -22,4 +24,5 @@ __all__ = [
     "preprocess_image",
     "register_baseline_model",
     "softmax",
+    "try_load_baseline_runtime",
 ]
