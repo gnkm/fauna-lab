@@ -93,7 +93,7 @@ web/              # Vite + React + TypeScript
 | データの保持 | SQLite（WAL、`foreign_keys=ON`）+ データディレクトリ上のファイル | プロセス追加なし。停止後にディレクトリ全体を複製すれば復元できる |
 | 推論 | ONNX Runtime。学習成果は可能な限り ONNX へ書き出し、API プロセスは PyTorch を載せない | 配布資産が ONNX。常駐メモリ 1 GiB（REQ-PERF-006） |
 | 学習 | PyTorch CPU。ベースライン利用時は凍結 embedding + 分類ヘッド。GPU は任意 | フルバックボーンは 4 論理 CPU・30 分制約に対して過剰 |
-| 前処理 | torchvision（短辺 256・中央 224・ImageNet 正規化） | 出典と同じ実装で期待値差 0.02 以内を狙う |
+| 前処理 | Pillow + NumPy（短辺 256・中央 224・ImageNet 正規化）。学習ワーカでのみ torchvision を足してよい | API に PyTorch を載せない（REQ-PERF-006）。手順は torchvision の ImageNet 評価前処理と同一（I-BASE-001） |
 | フロントエンド | TypeScript + Vite + React。静的成果物を API と同じオリジンで配信 | 既存の pnpm / Biome と整合。実行時 Node を増やさない |
 | パッケージ管理 | バックエンドは uv（`pyproject.toml` / `uv.lock`）、フロントは pnpm | lefthook の osv-scanner 対象と一致 |
 | 静的解析 | フロントは Biome、バックエンドは Ruff、型は Pyright | REQ-ATT-MNT-003。型チェッカは骨格 Issue で Pyright に固定 |
@@ -122,6 +122,7 @@ web/              # Vite + React + TypeScript
 6. ベースライン重みは `MANIFEST.json` の BSD-3-Clause を正とする。`assets/` は改変しない。
 7. Vite / browserslist 経由の `caniuse-lite` は CC-BY-4.0（ブラウザ機能表）。実行時ネット無し。許可するのは **`caniuse-lite` のみ**（ARCHITECTURE.md 4.1.6）。他の Creative Commons 依存は Issue で人間が決める。
 8. 画像デコードとサムネイルに **Pillow**（SPDX `MIT-CMU`。HPND 系の許諾的ライセンス）を使う。`python-multipart` は Apache-2.0。
+9. ベースライン前処理と畳み込みに **NumPy**（SPDX `BSD-3-Clause`。配布物に 0BSD / MIT / Zlib / CC0-1.0 の断片を含む）。推論ランタイムは **ONNX Runtime**（MIT）。間接依存 `protobuf` は BSD-3-Clause、`flatbuffers` は Apache-2.0。
 
 ### 2.4 不採用（転記）
 
@@ -359,7 +360,7 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 | `jobs` | 学習ジョブ。`RUNNING` は部分一意。モデル削除時は `model_id` を NULL | 整数 `id` + UUID `ref` |
 | `inferences` | 推論履歴。画像削除で CASCADE | 整数 `id` + UUID `ref` |
 
-`GET /api/_state` はこれらの表を SRS 語彙へ写すだけで、書き込まない。版 0（ベースライン）の本登録は F010。`assets/` が無くても起動する。
+`GET /api/_state` はこれらの表を SRS 語彙へ写すだけで、書き込まない。版 0（ベースライン）は F010 で起動時に登録する。`assets/` が無くても起動する。
 
 起動時に `status = 'RUNNING'` のジョブを `FAILED`（失敗原因「プロセス中断」）へ直す。未処理例外はプロセスを落とさず RFC 9457 の 500 `internal_error` を返す（REQ-ATT-REL-001 の土台）。
 
@@ -369,15 +370,17 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 
 ### 7.1 読み込み
 
-起動時に `FAUNALAB_ASSETS_DIR/baseline/MANIFEST.json` を読む。記載ファイルの SHA-256 を照合し、`class_map.json` のキー集合が 8 クラスと一致すること、ImageNet 索引の二重割当が無いことを確認する（REQ-F-BASE-005）。クラス対応はファイルからのみ読み、ソースに埋め込まない（REQ-F-BASE-009）。
+### 7.1 読み込み
 
-成功時のみモデル版 0 を登録し、有効モデルが未設定なら版 0 を有効化する。失敗・不在時は版 0 を登録せず警告して起動を続ける（REQ-F-BASE-006、REQ-CON-007）。重みはデータディレクトリへ複製しない。
+起動時に `FAUNALAB_ASSETS_DIR/baseline/MANIFEST.json` を読む。記載ファイルの SHA-256 を照合し、`class_map.json` のキー集合が 8 クラスと一致すること、ImageNet 索引の二重割当が無いことを確認する（REQ-F-BASE-005）。クラス対応はファイルからのみ読み、ソースに埋め込まない（REQ-F-BASE-009）。実装は `faunalab.ml.baseline`。
+
+成功時のみモデル版 0 を登録し、有効モデルが未設定なら版 0 を有効化する。失敗・不在時は版 0 を登録せず警告して起動を続ける（REQ-F-BASE-006、REQ-CON-007）。既に版 0 行があり推論履歴などから参照されている場合は行を残し `active` だけ落とす。重みはデータディレクトリへ複製せず、`assets/` へは書き込まない（REQ-F-BASE-011）。
 
 ### 7.2 推論（版 0）
 
-ONNX Runtime で `logits` を得る。softmax → クラスマップ合算 → その他質量 `1 − Σ s(c)` → `Σ s(c) ≥ 1e-6` なら `s(c)/Σ s(c)`、未満なら全クラス 0.125 かつ低信頼。未収録クラス（`american_bulldog`、`havanese`）の s(c) は常に 0。補間・温度スケーリング・事前確率補正はしない。
+ONNX Runtime で `logits` を得る（HTTP 推論 API は F011。関数単位の照合は F010 で `baseline_expectations.json` に対して実施）。softmax → クラスマップ合算 → その他質量 `1 − Σ s(c)` → `Σ s(c) ≥ 1e-6` なら `s(c)/Σ s(c)`、未満なら全クラス 0.125 かつ低信頼。未収録クラス（`american_bulldog`、`havanese`）の s(c) は常に 0。補間・温度スケーリング・事前確率補正はしない。
 
-共通前処理は REQ-F-BASE-002 の 5 ステップ。学習・評価・推論で同一実装を使う。
+共通前処理は REQ-F-BASE-002 の 5 ステップ（`faunalab.ml.preprocess`）。学習・評価・推論で同一実装を使う。
 
 ### 7.3 学習
 
@@ -576,6 +579,9 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超でステータスが異なる�
 **I-IMG-002 画素数上限**
 SRS は圧縮後 10 MiB 以外の寸法上限を定めない。展開爆弾を 500 にせず拒否するため、画素は 25,000,000 を超えたら JPEG/PNG として受理しない。Pillow の `DecompressionBombError` も同じ扱いとする。
 
+**I-BASE-001 API 前処理は torchvision 互換の Pillow + NumPy**
+ARCHITECTURE は出典合わせのため torchvision を挙げる。REQ-PERF-006 により API プロセスは PyTorch を載せない。共通前処理は torchvision の ImageNet 評価手順（短辺 256・bilinear、中央 224、`[0,1]`、ImageNet 平均・分散）を Pillow / NumPy で実装し、学習ワーカ（F014）で torchvision を使う場合もこの関数を共有する。VER-F-BASE-001 の期待値差 0.02 以内で適合を確認する。
+
 **I-USE-001 犬種知識を前提にしない**
 人手の 1 枚ラベルを必須手順にしない。主経路はサンプル投入 → 候補生成と採用 → 学習 → 推論とする（REQ-USE-001）。
 
@@ -605,7 +611,7 @@ REQ-COM-002 は起動後の通常動作で、ループバックと同一ホス�
 
 ### 10.2 仕様を満たせなかった箇所
 
-Compose のネットワーク制約はホスト級の完全遮断ではない（I-NET-001）。F007 時点で版 0 の本登録は行わない（F010）。実装後に未達があれば本項へ移す。
+Compose のネットワーク制約はホスト級の完全遮断ではない（I-NET-001）。実装後に未達があれば本項へ移す。
 
 ### 10.3 判断を保留した箇所（未決）
 
