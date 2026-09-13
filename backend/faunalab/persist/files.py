@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 
 _FILE_MODE = 0o644  # 実行ビットを付けない（REQ-ATT-SEC-002）
@@ -40,3 +41,17 @@ def remove_if_present(root: Path, relative: str) -> None:
     path = resolve_under(root, relative)
     if path.is_file():
         path.unlink()
+
+
+def ensure_dir(root: Path, relative: str) -> Path:
+    path = resolve_under(root, relative)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def remove_tree_if_present(root: Path, relative: str) -> None:
+    path = resolve_under(root, relative)
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)

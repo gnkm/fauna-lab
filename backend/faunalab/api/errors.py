@@ -19,10 +19,14 @@ ERROR_TITLES: dict[int, str] = {
 ERROR_STATUS: dict[str, int] = {
     "validation_error": 400,
     "image_not_found": 404,
+    "model_not_found": 404,
+    "job_not_found": 404,
     "image_duplicate": 409,
+    "model_not_deletable": 409,
     "payload_too_large": 413,
     "unsupported_media_type": 415,
     "sample_unavailable": 422,
+    "empty_test_split": 422,
     "no_active_model": 422,
     "baseline_unavailable": 422,
     "internal_error": 500,
@@ -60,6 +64,10 @@ def error_for_code(code: str, detail: str) -> AppError:
 
 def image_not_found() -> AppError:
     return error_for_code("image_not_found", "指定した画像は存在しません。")
+
+
+def model_not_found() -> AppError:
+    return error_for_code("model_not_found", "指定したモデル版は存在しません。")
 
 
 def no_active_model() -> AppError:

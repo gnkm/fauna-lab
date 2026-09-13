@@ -239,7 +239,10 @@ def test_ver_f_inf_002_model_ref_frozen_and_score_sum(
         builtin=False,
         created_at="2026-09-13T00:00:00Z",
     )
-    assert store.activate_model(other_ref) is True
+    activated = store.activate_model(other_ref)
+    assert activated is not None
+    assert activated.active is True
+    assert activated.ref == other_ref
     models = baseline_client.get("/api/_state").json()["models"]
     active = [model for model in models if model["active"]]
     assert len(active) == 1

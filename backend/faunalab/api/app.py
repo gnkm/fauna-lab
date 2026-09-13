@@ -16,6 +16,7 @@ from faunalab.api.errors import AppError, internal_error_response, problem_respo
 from faunalab.api.images import router as images_router
 from faunalab.api.inferences import router as inferences_router
 from faunalab.api.labels import router as labels_router
+from faunalab.api.models import router as models_router
 from faunalab.api.sample import router as sample_router
 from faunalab.api.spa import SpaStaticFiles
 from faunalab.api.splits import router as splits_router
@@ -104,6 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(splits_router)
     app.include_router(stats_router)
     app.include_router(sample_router)
+    app.include_router(models_router)
     app.include_router(inferences_router)
     dist = resolved.web_dist_dir
     if dist.is_dir():
