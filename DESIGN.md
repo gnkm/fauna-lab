@@ -346,7 +346,7 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 
 ### 6.1 SQLite 表（F007）
 
-単一ファイル `${FAUNALAB_DATA_DIR}/db.sqlite3`。WAL、`foreign_keys=ON`。版は `PRAGMA user_version`（現行 1）。マイグレーション専用ツールは置かず、起動時に `CREATE IF NOT EXISTS` とクラスの UPSERT を走らせる。
+単一ファイル `${FAUNALAB_DATA_DIR}/db.sqlite3`。WAL、`foreign_keys=ON`。版は `PRAGMA user_version`（現行 2）。マイグレーション専用ツールは置かず、起動時に `CREATE IF NOT EXISTS` とクラスの UPSERT を走らせる。`models.deleted` が無い既存 DB は起動時に列を足す。
 
 データディレクトリ配下の配置は ARCHITECTURE.md 6.2 のとおり（`images/`、`thumbs/`、`models/`、`jobs/`）。画像バイトは表に入れない。
 
@@ -356,7 +356,7 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 | `images` | メタデータと相対パス | 整数 `id` + UUID `ref` |
 | `labels` | 確定ラベル。画像あたり高々 1 | `image_id` PK |
 | `suggestions` | 候補ラベル。画像あたり高々 1 | `image_id` PK |
-| `models` | モデル版。`builtin` は `version = 0` と一致する CHECK。有効は部分一意索引 | 整数 `id` + UUID `ref` |
+| `models` | モデル版。`builtin` は `version = 0` と一致する CHECK。有効は部分一意索引。削除は `deleted=1` の論理削除（版番号を再利用しない） | 整数 `id` + UUID `ref` |
 | `jobs` | 学習ジョブ。`RUNNING` は部分一意。モデル削除時は `model_id` を NULL | 整数 `id` + UUID `ref` |
 | `inferences` | 推論履歴。画像削除で CASCADE | 整数 `id` + UUID `ref` |
 
@@ -570,6 +570,18 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超 JPEG でステータスが異�
 
 **I-API-003 一覧の向き**
 8.2 は試験再現のため `_state` の配列を昇順に固定する。プログラムインタフェースは利用者が新しいものを見る用途なので、`GET /api/jobs` と `GET /api/inferences` は `created_at` 降順、同刻は `ref` 降順とする。`GET /api/images` は 8.2 と同じ昇順。`GET /api/models` は版番号降順。いずれも第二キーまで含めて一意（REQ-API-006）。
+
+**I-MDL-001 学習済モデルの登録契約（F014）**
+学習ジョブ（F014）はモデル版を自ら INSERT しない。成功時は `faunalab.domain.models.register_trained_model` を呼ぶ。この関数が版番号（1 から連番、`MAX(version)+1`、削除済も含めて再利用しない）、有効化規則（REQ-F-MDL-004: 有効が無い、または有効が版 0 のときだけ自動有効化）、成果物ディレクトリ `models/{version}/` を担う。指標は呼び出し側が渡さない限り `null`。試験分割が空ならそのまま成功（REQ-F-MDL-002）。空でなければ F014 が `model.onnx` を書いたあと `evaluate_model` を呼ぶ。空のときに `evaluate_model` を呼んではならない（REQ-F-MDL-009 は再評価を失敗させる）。
+
+**I-MDL-002 モデル削除は論理削除**
+`DELETE /api/models/{ref}` は行を残し `deleted=1` にする。版番号の UNIQUE が残るので再利用しない。`_state` と GET は `deleted=0` だけを出す。成果物ディレクトリは除去する。`inferences.model_id` の FK は残るので推論履歴の `model_ref` は変わらない（REQ-F-MDL-007）。有効モデルと版 0 は 409 `model_not_deletable`。
+
+**I-MDL-003 再評価の対象**
+`POST /api/models/{ref}/evaluate` は現在 `split=test` かつ確定ラベルがある画像だけを使う。0 件なら 422 `empty_test_split`。版 0 は配布 ONNX + 畳み込み。学習済は `models/{version}/model.onnx` の 8 クラス logits の argmax（同率は `display_order` が小さい方）。
+
+**I-MDL-004 学習成果物のファイル名**
+F014 が書く ONNX のパスは `${FAUNALAB_DATA_DIR}/models/{version}/model.onnx` とする。出力は 8 クラスの `logits`（または先頭出力が長さ 8）。版 0 の重みはデータディレクトリへ複製しない。
 
 **I-IMG-001 単一ファイルの HTTP ステータス**
 VER-F-IMG-001 は偽装テキストと 10 MiB 超でステータスが異なることを求める。複数アップロードの部分成功は 200 に固定するため、当該検証はファイルを 1 件ずつ送る。件別 `code` は同じ語彙（`unsupported_media_type` / `payload_too_large`）を使う。
