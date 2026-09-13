@@ -417,7 +417,7 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 
 共通前処理は REQ-F-BASE-002 の 5 ステップ（`faunalab.ml.preprocess`）。学習・評価・推論で同一実装を使う。API プロセスは起動時に版 0 の ONNX セッションを載せ、PyTorch は import しない。
 
-新規ファイルは未割当・未ラベルで登録する。同一 SHA-256 が既にあれば既存画像を再利用する（I-INF-001）。1 要求の合計はファイルと `refs` を合わせて 20。有効モデルが無いときは 422 `no_active_model`。学習済モデルは `models/{version}/model.onnx` を ONNX Runtime で実行する（I-TRN-001）。版 0 は起動時に載せたセッションを使う。API プロセスは PyTorch を import しない。
+新規ファイルは未割当・未ラベルで登録する。同一 SHA-256 が既にあれば既存画像を再利用する（I-INF-001）。1 要求の合計はファイルと `refs` を合わせて 20。有効モデルが無いときは 422 `no_active_model`。学習済モデルは `models/{version}/model.onnx` を ONNX Runtime で実行する（I-TRN-001）。版 0 は起動時に載せたセッションを使う。学習済モデルは成果物パスごとにセッションを再利用し、埋め込みヘッドは同じ版 0 セッションで embedding を取る（I-TRN-005）。API プロセスは PyTorch を import しない。
 
 低信頼は最上位信頼度 < `FAUNALAB_CONFIDENCE_THRESHOLD`、その他質量 > `FAUNALAB_OTHER_MASS_THRESHOLD`、または一様 0.125 フォールバック。`other_mass` は版 0 で実数、学習済では `null`。
 
@@ -650,6 +650,9 @@ ARCHITECTURE は学習を PyTorch CPU とする。PyPI の `torch` 車輪は NVI
 
 **I-TRN-004 学習パラメータの上限**
 SRS はエポック数の上限を定めない。単一ワーカを極端な値で占有しないよう、プログラムインタフェースは `epochs` を 1〜1000、`batch_size` を 1〜512、`learning_rate` を正の有限値に限る。
+
+**I-TRN-005 学習済セッションの再利用**
+推論と候補生成は、学習済 ONNX を要求ごとに新規ロードしない。API プロセスは成果物の絶対パスと更新時刻・大きさでセッションをキャッシュする。埋め込みヘッドは起動時の版 0 セッションを共有し、ベースライン ONNX を二重に開かない。`run` はセッション単位で直列化する。
 
 **I-IMG-001 単一ファイルの HTTP ステータス**
 VER-F-IMG-001 は偽装テキストと 10 MiB 超でステータスが異なることを求める。複数アップロードの部分成功は 200 に固定するため、当該検証はファイルを 1 件ずつ送る。件別 `code` は同じ語彙（`unsupported_media_type` / `payload_too_large`）を使う。

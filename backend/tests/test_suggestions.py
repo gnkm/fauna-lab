@@ -26,7 +26,13 @@ from faunalab.domain.classes import CLASS_IDS
 from faunalab.domain.models import register_trained_model
 from faunalab.domain.suggestions import MAX_SUGGESTION_IMAGES
 from faunalab.ml.fold import FoldResult
-from faunalab.ml.train import N_CLASSES, export_cnn_onnx
+from faunalab.ml.predict import load_onnx_session
+from faunalab.ml.train import (
+    EMBEDDING_DIM,
+    N_CLASSES,
+    export_cnn_onnx,
+    export_linear_onnx,
+)
 from faunalab.persist.store import Store, SuggestionNew
 from faunalab.settings import Settings, get_settings
 from PIL import Image
@@ -554,3 +560,57 @@ def test_trained_active_model_generates_suggestions(
     assert all(item["class_id"] in CLASS_IDS for item in listed)
     assert all(0.0 <= item["confidence"] <= 1.0 for item in listed)
     assert baseline_client.get("/api/_state").json()["inferences"] == []
+
+
+def _linear_artifact_bytes(tmp_path: Path) -> bytes:
+    rng = np.random.default_rng(4)
+    dest = tmp_path / "head.onnx"
+    export_linear_onnx(
+        rng.normal(0, 0.1, size=(N_CLASSES, EMBEDDING_DIM)).astype(np.float32),
+        np.zeros((N_CLASSES,), dtype=np.float32),
+        dest,
+    )
+    return dest.read_bytes()
+
+
+def test_trained_session_reused_across_suggestion_requests(
+    baseline_client: TestClient, tmp_path: Path
+) -> None:
+    refs = _upload_n(baseline_client, 2)
+    store = _client_store(baseline_client)
+    register_trained_model(
+        store,
+        created_at="2026-09-13T00:00:00Z",
+        artifact_bytes=_cnn_artifact_bytes(tmp_path),
+    )
+    with patch(
+        "faunalab.ml.session_cache.load_onnx_session", wraps=load_onnx_session
+    ) as spy:
+        first = baseline_client.post("/api/suggestions", json={"refs": [refs[0]]})
+        second = baseline_client.post("/api/suggestions", json={"refs": [refs[1]]})
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    assert spy.call_count == 1
+
+
+def test_embedding_head_uses_startup_baseline_session(
+    baseline_client: TestClient, tmp_path: Path
+) -> None:
+    refs = _upload_n(baseline_client, 1)
+    store = _client_store(baseline_client)
+    register_trained_model(
+        store,
+        created_at="2026-09-13T00:00:00Z",
+        artifact_bytes=_linear_artifact_bytes(tmp_path),
+    )
+    with patch(
+        "faunalab.ml.session_cache.load_onnx_session", wraps=load_onnx_session
+    ) as spy:
+        response = baseline_client.post("/api/suggestions", json={"refs": refs})
+    assert response.status_code == 200, response.text
+    assert response.json()["generated_count"] == 1
+    assert spy.call_count == 1
+    loaded = Path(spy.call_args.args[0])
+    assert loaded.name == "model.onnx"
+    listed = baseline_client.get("/api/suggestions").json()["items"]
+    assert listed[0]["class_id"] in CLASS_IDS

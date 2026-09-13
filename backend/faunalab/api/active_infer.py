@@ -8,13 +8,9 @@ from PIL import Image
 from faunalab.api.errors import baseline_unavailable, error_for_code, no_active_model
 from faunalab.domain.models import TRAINED_ONNX_NAME
 from faunalab.ml.fold import FoldResult
-from faunalab.ml.predict import load_onnx_session
 from faunalab.ml.runtime import BaselineRuntime
-from faunalab.ml.trained import (
-    infer_trained_images,
-    is_embedding_head,
-    load_trained_session,
-)
+from faunalab.ml.session_cache import OnnxSessionCache
+from faunalab.ml.trained import infer_trained_images, is_embedding_head
 from faunalab.persist.files import resolve_under
 from faunalab.persist.store import ModelRow, Store
 
@@ -40,6 +36,15 @@ def infer_images_for_model(
     return _infer_trained_model(store, model, images, request)
 
 
+def _session_cache(request: Request) -> OnnxSessionCache:
+    cache = getattr(request.app.state, "onnx_sessions", None)
+    if isinstance(cache, OnnxSessionCache):
+        return cache
+    cache = OnnxSessionCache()
+    request.app.state.onnx_sessions = cache
+    return cache
+
+
 def _infer_trained_model(
     store: Store,
     model: ModelRow,
@@ -60,11 +65,11 @@ def _infer_trained_model(
             "internal_error",
             "モデル成果物を読み込めません。",
         )
-    session = load_trained_session(onnx_path)
+    session = _session_cache(request).get(onnx_path)
     embedding_session = None
     if is_embedding_head(session):
-        inspection = request.app.state.baseline
-        if not inspection.ok or inspection.model_path is None:
+        runtime = getattr(request.app.state, "baseline_runtime", None)
+        if not isinstance(runtime, BaselineRuntime):
             raise baseline_unavailable()
-        embedding_session = load_onnx_session(inspection.model_path)
+        embedding_session = runtime.locked_session()
     return infer_trained_images(session, images, embedding_session=embedding_session)

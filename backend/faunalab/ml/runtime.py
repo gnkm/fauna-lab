@@ -12,6 +12,7 @@ from PIL import Image
 
 from faunalab.ml.fold import FoldResult, fold_logits
 from faunalab.ml.preprocess import preprocess_batch
+from faunalab.ml.session_cache import LockedOnnxSession
 
 LOGGER = logging.getLogger("faunalab.ml.runtime")
 
@@ -35,6 +36,9 @@ class BaselineRuntime:
         if "logits" not in output_names:
             raise ValueError("baseline ONNX output does not include logits")
         self._lock = threading.Lock()
+
+    def locked_session(self) -> LockedOnnxSession:
+        return LockedOnnxSession(self._session, self._lock)
 
     def infer_images(self, images: list[Image.Image]) -> list[FoldResult]:
         if not images:

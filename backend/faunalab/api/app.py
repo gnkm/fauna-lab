@@ -27,6 +27,7 @@ from faunalab.api.suggestions import router as suggestions_router
 from faunalab.jobs.supervisor import start_worker, stop_worker
 from faunalab.ml.baseline import register_baseline_model
 from faunalab.ml.runtime import try_load_baseline_runtime
+from faunalab.ml.session_cache import OnnxSessionCache
 from faunalab.persist.store import Store
 from faunalab.settings import Settings, get_settings
 
@@ -50,6 +51,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         _app.state.baseline = inspection
         _app.state.baseline_runtime = runtime
+        _app.state.onnx_sessions = OnnxSessionCache()
         _app.state.store = store
         worker = start_worker(resolved.data_dir, resolved.assets_dir)
         _app.state.worker = worker

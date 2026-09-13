@@ -14,21 +14,22 @@ from faunalab.ml.embeddings import extract_embeddings
 from faunalab.ml.fold import FoldResult, fold_trained_logits
 from faunalab.ml.predict import load_onnx_session
 from faunalab.ml.preprocess import preprocess_batch
+from faunalab.ml.session_cache import OnnxRunnable
 
 _BATCH = 32
 
 
-def is_embedding_head(session: ort.InferenceSession) -> bool:
+def is_embedding_head(session: OnnxRunnable) -> bool:
     shape = session.get_inputs()[0].shape
     dims = [item for item in shape if isinstance(item, int) and item > 0]
     return 1280 in dims and 3 not in dims
 
 
 def infer_trained_images(
-    session: ort.InferenceSession,
+    session: OnnxRunnable,
     images: Sequence[Image.Image],
     *,
-    embedding_session: ort.InferenceSession | None = None,
+    embedding_session: OnnxRunnable | None = None,
 ) -> list[FoldResult]:
     if not images:
         return []
@@ -37,10 +38,10 @@ def infer_trained_images(
 
 
 def infer_trained_paths(
-    session: ort.InferenceSession,
+    session: OnnxRunnable,
     image_paths: Sequence[Path],
     *,
-    embedding_session: ort.InferenceSession | None = None,
+    embedding_session: OnnxRunnable | None = None,
 ) -> list[str]:
     images: list[Image.Image] = []
     try:
@@ -58,10 +59,10 @@ def infer_trained_paths(
 
 
 def _logits_for_images(
-    session: ort.InferenceSession,
+    session: OnnxRunnable,
     images: Sequence[Image.Image],
     *,
-    embedding_session: ort.InferenceSession | None,
+    embedding_session: OnnxRunnable | None,
 ) -> NDArray[np.floating]:
     if is_embedding_head(session):
         if embedding_session is None:
@@ -81,7 +82,7 @@ def _logits_for_images(
 
 
 def _run_head(
-    session: ort.InferenceSession, inputs: NDArray[np.floating]
+    session: OnnxRunnable, inputs: NDArray[np.floating]
 ) -> NDArray[np.floating]:
     input_name = session.get_inputs()[0].name
     output_names = [item.name for item in session.get_outputs()]

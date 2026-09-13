@@ -11,12 +11,13 @@ from PIL import Image
 
 from faunalab.ml.predict import load_onnx_session
 from faunalab.ml.preprocess import preprocess_image
+from faunalab.ml.session_cache import OnnxRunnable
 
 EMBEDDING_DIM = 1280
 Float32Array = NDArray[np.float32]
 
 
-def embedding_output_name(session: ort.InferenceSession) -> str:
+def embedding_output_name(session: OnnxRunnable) -> str:
     names = [item.name for item in session.get_outputs()]
     if "embedding" in names:
         return "embedding"
@@ -24,7 +25,7 @@ def embedding_output_name(session: ort.InferenceSession) -> str:
 
 
 def extract_embeddings(
-    session: ort.InferenceSession,
+    session: OnnxRunnable,
     images: list[Image.Image],
 ) -> Float32Array:
     """Return shape `(N, 1280)` float32 in input order (eval preprocess)."""
@@ -36,7 +37,7 @@ def extract_embeddings(
 
 
 def extract_embeddings_nchw(
-    session: ort.InferenceSession,
+    session: OnnxRunnable,
     batch: Float32Array,
 ) -> Float32Array:
     """Run embedding on an already-preprocessed `(N, 3, 224, 224)` batch."""
