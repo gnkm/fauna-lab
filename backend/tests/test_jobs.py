@@ -65,9 +65,19 @@ def _app_store(client: TestClient) -> Store:
 
 def _jpeg(color: tuple[int, int, int], salt: int = 0) -> bytes:
     image = Image.new("RGB", (64, 48), color)
-    image.putpixel((0, 0), ((color[0] + salt) % 256, color[1], color[2]))
+    for offset in range(16):
+        x = offset % 64
+        y = offset // 4
+        image.putpixel(
+            (x, y),
+            (
+                (color[0] + salt + offset) % 256,
+                (color[1] + salt * 3) % 256,
+                (color[2] + salt * 7 + offset * 11) % 256,
+            ),
+        )
     buffer = io.BytesIO()
-    image.save(buffer, format="JPEG")
+    image.save(buffer, format="PNG")
     return buffer.getvalue()
 
 
@@ -83,10 +93,10 @@ def _plant(
     refs: list[str] = []
     for index in range(count):
         payload = _jpeg(color, salt0 + index)
-        filename = f"{class_id}-{split}-{salt0}-{index}.jpg"
+        filename = f"{class_id}-{split}-{salt0}-{index}.png"
         uploaded = client.post(
             "/api/images",
-            files=[("files", (filename, payload, "image/jpeg"))],
+            files=[("files", (filename, payload, "image/png"))],
         )
         assert uploaded.status_code == 200, uploaded.text
         item = uploaded.json()["items"][0]
