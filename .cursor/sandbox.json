@@ -11,7 +11,12 @@
       "codeload.github.com",
       "api.github.com",
       "*.githubusercontent.com",
-      "ghcr.io"
+      "ghcr.io",
+      "deb.nodesource.com",
+      "download.docker.com",
+      "docker.io",
+      "*.docker.io",
+      "*.docker.com"
     ]
   }
 }
