@@ -423,7 +423,7 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 候補生成は同期 API とし、1 回最大 100 枚（REQ-F-SUG-002）。有効モデルは推論と同じ版 0 の ONNX ランタイムを用いる。学習済モデルの候補生成は F014。候補は `suggestions` 表にだけ書き、推論履歴は残さない。
 
 - `POST /api/suggestions` の `refs` 省略（または `{}`）は、未ラベル画像を `created_at`・`ref` 昇順で最大 100 枚取る（I-SUG-001）。
-- 指定 `refs` に存在しない画像があれば全体を 404 にする。確定ラベル付きは推論せず `skipped_labeled_count` に数える（I-SUG-002、REQ-F-SUG-003）。
+- 指定 `refs` に存在しない画像があれば全体を 404 にする。確定ラベル付きは推論せず `skipped_labeled_count` に数える。保存直前に確定ラベルが付いていた画像も同じ件数へ加算する（I-SUG-002、REQ-F-SUG-003）。
 - 再生成は `ON CONFLICT(image_id)` で上書きする（REQ-F-SUG-005）。
 - 採用は確定ラベル `source=model_suggested` を付けて候補を削除する。指定採用で候補が無い画像は読み飛ばす。却下は 1 件でも対象が無ければ全体を失敗にする（I-SUG-003）。
 - 閾値一括採用は `confidence >= min_confidence`（I-SUG-004）。
@@ -631,7 +631,7 @@ REQ-F-INF-006 は履歴を残すために新規画像を登録することを求
 `POST /api/suggestions` の `refs` 省略または空オブジェクトは、確定ラベルを持たない画像を `created_at`・`ref` 昇順で最大 100 枚処理する。空の `refs` 配列は要求内容の誤りとする。
 
 **I-SUG-002 指定集合の不在と確定の読み飛ばし**
-指定 `refs` に存在しない画像が 1 件でもあれば全体を 404 `image_not_found` にする。確定ラベル付きは生成対象にせず、要求全体は失敗にしない（REQ-F-SUG-003）。
+指定 `refs` に存在しない画像が 1 件でもあれば全体を 404 `image_not_found` にする。確定ラベル付きは生成対象にせず、要求全体は失敗にしない（REQ-F-SUG-003）。推論開始後に確定ラベルが付いた画像も保存時に読み飛ばし、その件数を `skipped_labeled_count` へ含める。
 
 **I-SUG-003 採用の読み飛ばしと却下の原子性**
 指定採用は、候補が無い画像を読み飛ばして `updated_count` だけ返す。画像そのものが無いときは 404 `image_not_found`。却下は対象の候補が 1 件でも無ければ全体を失敗（404 `suggestion_not_found`）とし、一部だけ消さない。
