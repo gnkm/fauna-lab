@@ -31,7 +31,9 @@ test("空状態の案内と日本語クラス名がある", async ({ page }) => 
   ).toBeVisible();
   await expect(page.getByText("次の順で進めると")).toBeVisible();
   await expect(page.getByRole("rowheader", { name: "サモエド" })).toBeVisible();
-  await expect(page.getByRole("rowheader", { name: "ハバニーズ" })).toBeVisible();
+  await expect(
+    page.getByRole("rowheader", { name: "ハバニーズ" }),
+  ).toBeVisible();
   await expect(page.getByTestId("stat-image-count")).toHaveText("0");
   await expect(page.getByTestId("active-model-missing")).toBeVisible();
 });
