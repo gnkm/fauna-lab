@@ -21,10 +21,12 @@ def test_swagger_html_is_disabled(client: TestClient) -> None:
     assert response.status_code == 404
 
 
-def test_cors_middleware_is_added_when_origins_set() -> None:
+def test_cors_middleware_is_added_when_origins_set(tmp_path: Path) -> None:
     settings = Settings(
         cors_origins="http://localhost:5173",
         web_dist_dir=Path("/missing-dist"),
+        data_dir=tmp_path / "data",
+        assets_dir=tmp_path / "assets",
     )
     with TestClient(create_app(settings)) as client:
         response = client.options(
@@ -45,7 +47,11 @@ def test_static_index_is_mounted(tmp_path: Path) -> None:
     (dist / "index.html").write_text(
         "<!doctype html><title>FaunaLab</title>", encoding="utf-8"
     )
-    settings = Settings(web_dist_dir=dist)
+    settings = Settings(
+        web_dist_dir=dist,
+        data_dir=tmp_path / "data",
+        assets_dir=tmp_path / "assets",
+    )
     with TestClient(create_app(settings)) as client:
         response = client.get("/")
     assert response.status_code == 200
