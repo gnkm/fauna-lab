@@ -1,0 +1,1565 @@
+# FaunaLab OpenAPI 3.1 骨格（F006 / #7）。
+# パス・HTTP メソッド・ページネーション・誤り語彙・観測インタフェースを固定する。
+# 詳細フィールドは実装 Issue で足し、F019 で実装と一致させる。
+# 採らなかったパス設計は DESIGN.md 3.3 節。
+openapi: "3.1.0"
+info:
+  title: FaunaLab
+  version: "0.1.0"
+  summary: 犬種分類システムの HTTP 契約
+  description: |
+    プログラムインタフェース（REQ-API-001）と観測インタフェース（REQ-OBS-001）の契約。
+    設計の根拠と不採用案は [DESIGN.md](DESIGN.md) 3〜4 節。
+
+    ## パス規約
+
+    - リソースは名詞の複数形。プレフィックスは `/api/`。
+    - 観測だけ仕様どおり `GET /api/_state`。
+    - JSON フィールドは snake_case。日時は ISO 8601-1 の UTC（末尾 `Z`）。
+    - 公開識別子 `ref` は UUID version 4（小文字・ハイフン付き）。削除後は再利用しない。
+
+    ## ページネーション（REQ-API-006）
+
+    一覧は `limit`（既定 50、上限 200）と `offset`（既定 0）を受け付け、`items` と `total` を返す。
+    同一条件の順序は常に一意。ソートキーは各操作の説明と DESIGN.md 8.2 / I-API-003。
+
+    ## 誤り（REQ-API-003 / 004 / 005）
+
+    応答は RFC 9457 Problem Details（`application/problem+json`）。
+    `code` が機械判別用識別子、`detail` が利用者向け日本語説明。
+    `type` は `urn:faunalab:error:{code}`。実行時に解決しに行かない。
+    スタックトレース、内部ファイルパス、SQL は含めない。
+
+    REQ-API-003 の 7 状況は **それぞれ異なるステータス** にする（同一番号に 2 類を載せない）。
+
+    | 状況 | HTTP | `code` の型 |
+    | --- | --- | --- |
+    | 要求内容の誤り | 400 | `validation_error` |
+    | 対象の不在 | 404 | `{resource}_not_found` |
+    | 現在の状態では実行できない操作 | 409 | 状況別（`image_duplicate` 等） |
+    | 前提条件の不成立 | 422 | 状況別（`training_precondition` 等） |
+    | 許可されない媒体型 | 415 | `unsupported_media_type` |
+    | 上限を超える大きさ | 413 | `payload_too_large` |
+    | システム内部の予期しない誤り | 500 | `internal_error` |
+
+    語彙の列挙は `components.schemas.ErrorCode`。
+
+    複数ファイルアップロードの件別失敗は操作全体を誤りにしない（REQ-F-IMG-005）。
+    HTTP 200 と件別 `ok` / `code`。件別 `code` も同じ語彙。
+
+    ## CORS（REQ-API-007）
+
+    許可オリジンは環境変数 `FAUNALAB_CORS_ORIGINS`（カンマ区切り）。
+    空なら同一オリジンのみ（既定の提出形態）。パスとしては表さない。
+
+    実行時の生成文書は FastAPI の `/openapi.json`。本ファイルが契約の正本であり、
+    実装との最終一致は F019。
+  contact:
+    name: FaunaLab
+servers:
+  - url: http://127.0.0.1:8000
+    description: 既定のホスト待受（FAUNALAB_PORT 既定 8000）
+tags:
+  - name: observation
+    description: 評価用の読み取り専用観測（形式固定）
+  - name: images
+    description: 画像の登録・一覧・詳細・削除・サムネイル
+  - name: labels
+    description: 確定ラベルの付与・解除・一括
+  - name: splits
+    description: データセット分割
+  - name: stats
+    description: 件数の概況（REQ-F-DS-005 / REQ-UI-006）
+  - name: jobs
+    description: 学習ジョブ
+  - name: models
+    description: モデル版
+  - name: inferences
+    description: 推論と履歴
+  - name: suggestions
+    description: 候補ラベル
+  - name: sample
+    description: 配布サンプルの投入
+paths:
+  /api/_state:
+    get:
+      tags: [observation]
+      operationId: getState
+      summary: 観測インタフェース
+      description: |
+        読み取り専用。状態を変更しない（REQ-OBS-001）。
+        内部表をそのまま返さず、SRS 3.1.3 の語彙へ変換する。
+        必須キーはすべて含める。追加キーは許容する。
+        配列順は DESIGN.md 8.2（昇順、同刻は `ref` 昇順）。
+      responses:
+        "200":
+          description: 現在の状態
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservationState"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/images:
+    get:
+      tags: [images]
+      operationId: listImages
+      summary: 画像一覧
+      description: |
+        絞り込みは `split`・`class_id`・`labeled` の論理積（REQ-F-IMG-008）。
+        順序は `created_at` 昇順、同刻は `ref` 昇順。
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: split
+          in: query
+          schema:
+            $ref: "#/components/schemas/Split"
+        - name: class_id
+          in: query
+          schema:
+            $ref: "#/components/schemas/ClassId"
+        - name: labeled
+          in: query
+          description: 確定ラベルの有無。未指定なら絞り込まない。
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: ページ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImagePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [images]
+      operationId: uploadImages
+      summary: 画像アップロード
+      description: |
+        マルチパート。1 回最大 50 ファイル（REQ-F-IMG-004）。
+        形式は内容判定で JPEG/PNG のみ（REQ-F-IMG-001 / 002）。1 ファイル 10 MiB（REQ-F-IMG-003）。
+        フィールド名は `files`。
+        1 件でも成功すれば HTTP 200。件別に `ok` と失敗時 `code`。
+        SHA-256 重複は件別 `image_duplicate`（409 類の語彙。HTTP は 200）。
+        要求が空、または `files` 欠落は 400。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "200":
+          description: 件別結果（部分成功を含む）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/images/{ref}:
+    parameters:
+      - $ref: "#/components/parameters/ImageRef"
+    get:
+      tags: [images]
+      operationId: getImage
+      summary: 画像詳細
+      responses:
+        "200":
+          description: 詳細
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Image"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [images]
+      operationId: deleteImage
+      summary: 画像削除
+      description: |
+        確定ラベル・候補・推論履歴・画像ファイル・サムネイルを削除する（REQ-F-IMG-009）。
+        学習済モデル版は残す。
+      responses:
+        "204":
+          description: 削除した
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/images/{ref}/thumbnail:
+    parameters:
+      - $ref: "#/components/parameters/ImageRef"
+    get:
+      tags: [images]
+      operationId: getImageThumbnail
+      summary: サムネイル
+      description: 長辺 256 以下、アスペクト比保持（REQ-F-IMG-007）。媒体型は JPEG。
+      responses:
+        "200":
+          description: サムネイル画像
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/images/{ref}/label:
+    parameters:
+      - $ref: "#/components/parameters/ImageRef"
+    put:
+      tags: [labels]
+      operationId: putImageLabel
+      summary: 確定ラベルの付与または上書き
+      description: |
+        人手経路の `source` は `human`（REQ-F-ANN-006）。既存ラベルは上書きし失敗にしない。
+        付与時に候補があれば削除する（REQ-F-ANN-007）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabelWrite"
+      responses:
+        "200":
+          description: 付与後のラベル
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmedLabel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [labels]
+      operationId: deleteImageLabel
+      summary: ラベル解除
+      description: 確定ラベルを外し、分割は unassigned に戻す（I-API-002）。候補は作らない。
+      responses:
+        "204":
+          description: 解除した
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/labels/bulk:
+    post:
+      tags: [labels]
+      operationId: bulkPutLabels
+      summary: 同一クラスの一括付与
+      description: |
+        1 件でも不在なら全体失敗、いかなる画像も更新しない（REQ-F-ANN-004）。
+        成功時は更新件数を返す（REQ-F-ANN-005）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkLabelRequest"
+      responses:
+        "200":
+          description: 更新件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/splits:
+    post:
+      tags: [splits]
+      operationId: createSplit
+      summary: 層化分割
+      description: |
+        確定ラベル付き画像だけを train/val/test へ割り当てる。未ラベルは `unassigned`（REQ-F-DS-004）。
+        既定比率 0.7 / 0.15 / 0.15、シード 42（REQ-F-DS-001）。比率の合計が 1 でない場合は 400。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SplitRequest"
+      responses:
+        "200":
+          description: 割当結果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SplitResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/stats:
+    get:
+      tags: [stats]
+      operationId: getStats
+      summary: 件数の概況
+      description: |
+        総数、確定/未ラベル/候補、クラス別、分割別、有効モデル、ジョブ有無（REQ-F-DS-005）。
+        確定ラベル数に候補のみの画像を含めない。
+      responses:
+        "200":
+          description: 概況
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/jobs:
+    get:
+      tags: [jobs]
+      operationId: listJobs
+      summary: 学習ジョブ一覧
+      description: 新しい順（created_at 降順、同刻は ref 降順）。I-API-003。
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: ページ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [jobs]
+      operationId: createJob
+      summary: 学習開始
+      description: |
+        完了を待たず直ちに 201（REQ-F-TRN-001）。`Location` にジョブパス。
+        省略パラメータは既定値（REQ-F-TRN-002）。実行中があっても `QUEUED` で受け付ける。
+        開始条件不足は 422 `training_precondition`。ベースライン指定なのに資産無しは 422 `baseline_unavailable`。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobCreateRequest"
+      responses:
+        "201":
+          description: 受付したジョブ
+          headers:
+            Location:
+              description: 作成したジョブのパス
+              schema:
+                type: string
+                examples: ["/api/jobs/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"]
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/jobs/{ref}:
+    parameters:
+      - $ref: "#/components/parameters/JobRef"
+    get:
+      tags: [jobs]
+      operationId: getJob
+      summary: 学習ジョブ詳細
+      responses:
+        "200":
+          description: 詳細
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/jobs/{ref}/logs:
+    parameters:
+      - $ref: "#/components/parameters/JobRef"
+    get:
+      tags: [jobs]
+      operationId: getJobLogs
+      summary: エポック時系列ログ
+      description: エポック番号、訓練損失、検証損失、検証正解率、所要時間（REQ-F-TRN-010）。
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: ログページ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobLogPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/jobs/{ref}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/JobRef"
+    post:
+      tags: [jobs]
+      operationId: cancelJob
+      summary: 学習中止
+      description: |
+        `QUEUED` / `RUNNING` のみ。終端は 409 `job_not_cancelable`（REQ-F-TRN-007）。
+        実行中は 10 秒以内に `CANCELED`（REQ-F-TRN-008）。
+      responses:
+        "200":
+          description: 中止を受理したジョブ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/models:
+    get:
+      tags: [models]
+      operationId: listModels
+      summary: モデル版一覧
+      description: 版番号降順（同版は起こらない。一意性は version）。
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: ページ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/models/{ref}:
+    parameters:
+      - $ref: "#/components/parameters/ModelRef"
+    get:
+      tags: [models]
+      operationId: getModel
+      summary: モデル版詳細
+      responses:
+        "200":
+          description: 指標を含む詳細
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Model"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [models]
+      operationId: deleteModel
+      summary: モデル版削除
+      description: |
+        有効モデルと版 0 は 409 `model_not_deletable`（REQ-F-MDL-006）。
+        成果物は除去し、当該モデルの推論履歴は残す。
+      responses:
+        "204":
+          description: 削除した
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/models/{ref}/activate:
+    parameters:
+      - $ref: "#/components/parameters/ModelRef"
+    post:
+      tags: [models]
+      operationId: activateModel
+      summary: 有効化
+      description: 他の有効モデルを無効化する。有効は高々 1 件。
+      responses:
+        "200":
+          description: 有効化したモデル
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Model"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/models/{ref}/evaluate:
+    parameters:
+      - $ref: "#/components/parameters/ModelRef"
+    post:
+      tags: [models]
+      operationId: evaluateModel
+      summary: 現在の試験分割で再評価
+      description: 試験分割が空なら 422 empty_test_split（REQ-F-MDL-009）。版 0 でも実行できる。
+      responses:
+        "200":
+          description: 更新後のモデル
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Model"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/inferences:
+    get:
+      tags: [inferences]
+      operationId: listInferences
+      summary: 推論履歴
+      description: 新しい順（created_at 降順、同刻は ref 降順）。
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: ページ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InferencePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [inferences]
+      operationId: createInferences
+      summary: 推論
+      description: |
+        新規ファイルおよび/または登録済 `refs`。合計最大 20（REQ-F-INF-001 / 002）。
+        有効モデル無しは 422 `no_active_model`。
+        新規ファイルは未割当・未ラベルで登録する（REQ-F-INF-006）。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/InferenceCreateRequest"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InferenceCreateJson"
+      responses:
+        "200":
+          description: 作成した推論
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InferenceCreateResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/suggestions:
+    get:
+      tags: [suggestions]
+      operationId: listSuggestions
+      summary: 候補ラベル一覧
+      description: |
+        信頼度範囲と昇順/降順（REQ-F-SUG-006）。
+        並べ替えキーは `confidence`、同値は `ref` で一意。
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: min_confidence
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 1
+        - name: max_confidence
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 1
+        - name: order
+          in: query
+          description: 信頼度の向き。既定は降順。
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: ページ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [suggestions]
+      operationId: createSuggestions
+      summary: 候補生成
+      description: |
+        指定画像または未ラベル集合。最大 100 枚（REQ-F-SUG-001 / 002）。
+        確定ラベル付きは読み飛ばし、件数を返す。全体は失敗にしない。
+        有効モデル無しは 422 `no_active_model`。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestionCreateRequest"
+      responses:
+        "200":
+          description: 生成件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionCreateResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/suggestions/accept:
+    post:
+      tags: [suggestions]
+      operationId: acceptSuggestions
+      summary: 指定画像の候補採用
+      description: 確定ラベル model_suggested を付け、候補を削除する（REQ-F-SUG-008）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefListRequest"
+      responses:
+        "200":
+          description: 採用件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/suggestions/accept-by-threshold:
+    post:
+      tags: [suggestions]
+      operationId: acceptSuggestionsByThreshold
+      summary: 閾値一括採用
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThresholdAcceptRequest"
+      responses:
+        "200":
+          description: 採用件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/suggestions/reject:
+    post:
+      tags: [suggestions]
+      operationId: rejectSuggestions
+      summary: 候補却下
+      description: 対象不在は 404 suggestion_not_found（REQ-F-SUG-009）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefListRequest"
+      responses:
+        "200":
+          description: 却下件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/sample/import:
+    post:
+      tags: [sample]
+      operationId: importSample
+      summary: サンプル投入
+      description: |
+        `assets/sample/manifest.json` を読み、確定ラベル `human` で登録（REQ-F-SYS-003）。
+        資産が無い場合は 422 `sample_unavailable`。起動自体は失敗させない。
+      responses:
+        "200":
+          description: 投入件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResult"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: 件数制限。既定 50、上限 200。
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    Offset:
+      name: offset
+      in: query
+      description: 先頭からの位置。0 始まり。
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    ImageRef:
+      name: ref
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Ref"
+    JobRef:
+      name: ref
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Ref"
+    ModelRef:
+      name: ref
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Ref"
+
+  responses:
+    BadRequest:
+      description: 要求内容の誤り（REQ-API-003）
+      x-srs-situation: 要求内容の誤り
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            validation_error:
+              value:
+                type: urn:faunalab:error:validation_error
+                title: Bad Request
+                status: 400
+                detail: 要求の内容が正しくありません。
+                code: validation_error
+    NotFound:
+      description: 対象の不在（REQ-API-003）
+      x-srs-situation: 対象の不在
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            image_not_found:
+              value:
+                type: urn:faunalab:error:image_not_found
+                title: Not Found
+                status: 404
+                detail: 指定した画像は存在しません。
+                code: image_not_found
+    Conflict:
+      description: 現在の状態では実行できない操作（REQ-API-003）
+      x-srs-situation: 現在の状態では実行できない操作
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            job_not_cancelable:
+              value:
+                type: urn:faunalab:error:job_not_cancelable
+                title: Conflict
+                status: 409
+                detail: 終端状態のジョブは中止できません。
+                code: job_not_cancelable
+    Unprocessable:
+      description: 前提条件の不成立（REQ-API-003）
+      x-srs-situation: 前提条件の不成立
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            training_precondition:
+              value:
+                type: urn:faunalab:error:training_precondition
+                title: Unprocessable Content
+                status: 422
+                detail: 学習を開始するための枚数またはクラス数が足りません。
+                code: training_precondition
+    UnsupportedMediaType:
+      description: 許可されない媒体型（REQ-API-003）
+      x-srs-situation: 許可されない媒体型
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            unsupported_media_type:
+              value:
+                type: urn:faunalab:error:unsupported_media_type
+                title: Unsupported Media Type
+                status: 415
+                detail: JPEG または PNG 以外の画像は受け付けません。
+                code: unsupported_media_type
+    PayloadTooLarge:
+      description: 上限を超える大きさ（REQ-API-003）
+      x-srs-situation: 上限を超える大きさ
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            payload_too_large:
+              value:
+                type: urn:faunalab:error:payload_too_large
+                title: Content Too Large
+                status: 413
+                detail: ファイルサイズが 10 MiB を超えています。
+                code: payload_too_large
+    InternalError:
+      description: システム内部の予期しない誤り（REQ-API-003）
+      x-srs-situation: システム内部の予期しない誤り
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            internal_error:
+              value:
+                type: urn:faunalab:error:internal_error
+                title: Internal Server Error
+                status: 500
+                detail: 処理中に予期しない誤りが起きました。
+                code: internal_error
+
+  schemas:
+    Ref:
+      type: string
+      format: uuid
+      description: UUID version 4。対象が存在する限り不変。削除後は再利用しない。
+      examples: ["aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"]
+    DateTime:
+      type: string
+      format: date-time
+      description: UTC、末尾 Z。
+      examples: ["2026-09-12T03:04:05Z"]
+    ClassId:
+      type: string
+      enum:
+        - samoyed
+        - great_pyrenees
+        - boxer
+        - american_bulldog
+        - chihuahua
+        - miniature_pinscher
+        - pomeranian
+        - havanese
+    Split:
+      type: string
+      enum: [train, val, test, unassigned]
+    LabelSource:
+      type: string
+      enum: [human, model_suggested]
+    JobStatus:
+      type: string
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]
+    Sha256:
+      type: string
+      pattern: "^[0-9a-f]{64}$"
+      description: 小文字 hex。
+    ErrorCode:
+      type: string
+      description: 機械判別用の誤り識別子（REQ-API-004）。語彙を増やす場合はリソース名を接頭辞にし、7 類のいずれかに対応付ける。
+      enum:
+        - validation_error
+        - unsupported_media_type
+        - payload_too_large
+        - image_not_found
+        - job_not_found
+        - model_not_found
+        - inference_not_found
+        - suggestion_not_found
+        - image_duplicate
+        - job_not_cancelable
+        - model_not_deletable
+        - training_precondition
+        - no_active_model
+        - empty_test_split
+        - baseline_unavailable
+        - sample_unavailable
+        - internal_error
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, detail, code]
+      description: |
+        RFC 9457。`detail` にスタックトレース、内部パス、SQL を入れない（REQ-API-005）。
+        追加フィールドでトレースを足さない。
+      properties:
+        type:
+          type: string
+          format: uri
+          description: "urn:faunalab:error:{code}"
+          examples: ["urn:faunalab:error:image_not_found"]
+        title:
+          type: string
+          description: ステータスの短い英語名
+        status:
+          type: integer
+          enum: [400, 404, 409, 413, 415, 422, 500]
+        detail:
+          type: string
+          description: 利用者向けの日本語説明
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+      unevaluatedProperties: false
+    PageMeta:
+      type: object
+      required: [items, total]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          description: 絞り込み後の全体件数
+    ImagePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Image"
+    JobPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Job"
+    JobLogPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobLogEntry"
+    ModelPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Model"
+    InferencePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Inference"
+    SuggestionPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Suggestion"
+    CountResult:
+      type: object
+      required: [updated_count]
+      properties:
+        updated_count:
+          type: integer
+          minimum: 0
+    ConfirmedLabel:
+      type: object
+      required: [class_id, source]
+      properties:
+        class_id:
+          $ref: "#/components/schemas/ClassId"
+        source:
+          $ref: "#/components/schemas/LabelSource"
+    SuggestionPayload:
+      type: object
+      required: [class_id, confidence, model_ref]
+      properties:
+        class_id:
+          $ref: "#/components/schemas/ClassId"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        model_ref:
+          $ref: "#/components/schemas/Ref"
+    Image:
+      type: object
+      required: [ref, sha256, split, label, suggestion]
+      properties:
+        ref:
+          $ref: "#/components/schemas/Ref"
+        sha256:
+          $ref: "#/components/schemas/Sha256"
+        split:
+          $ref: "#/components/schemas/Split"
+        label:
+          oneOf:
+            - $ref: "#/components/schemas/ConfirmedLabel"
+            - type: "null"
+        suggestion:
+          oneOf:
+            - $ref: "#/components/schemas/SuggestionPayload"
+            - type: "null"
+    UploadItem:
+      type: object
+      required: [filename, ok]
+      properties:
+        filename:
+          type: string
+        ok:
+          type: boolean
+        ref:
+          $ref: "#/components/schemas/Ref"
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        detail:
+          type: string
+    UploadResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadItem"
+    LabelWrite:
+      type: object
+      required: [class_id]
+      properties:
+        class_id:
+          $ref: "#/components/schemas/ClassId"
+        source:
+          $ref: "#/components/schemas/LabelSource"
+          default: human
+    BulkLabelRequest:
+      type: object
+      required: [refs, class_id]
+      properties:
+        refs:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Ref"
+        class_id:
+          $ref: "#/components/schemas/ClassId"
+    SplitRequest:
+      type: object
+      properties:
+        train_ratio:
+          type: number
+          exclusiveMinimum: 0
+          exclusiveMaximum: 1
+          default: 0.7
+        val_ratio:
+          type: number
+          exclusiveMinimum: 0
+          exclusiveMaximum: 1
+          default: 0.15
+        test_ratio:
+          type: number
+          exclusiveMinimum: 0
+          exclusiveMaximum: 1
+          default: 0.15
+        seed:
+          type: integer
+          default: 42
+    SplitResult:
+      type: object
+      required: [assigned_count, unassigned_count, seed, train_ratio, val_ratio, test_ratio]
+      properties:
+        assigned_count:
+          type: integer
+          minimum: 0
+        unassigned_count:
+          type: integer
+          minimum: 0
+        seed:
+          type: integer
+        train_ratio:
+          type: number
+        val_ratio:
+          type: number
+        test_ratio:
+          type: number
+    Stats:
+      type: object
+      required:
+        - image_count
+        - labeled_count
+        - unlabeled_count
+        - suggestion_count
+        - per_class
+        - per_split
+        - active_model_ref
+        - has_active_job
+      properties:
+        image_count:
+          type: integer
+          minimum: 0
+        labeled_count:
+          type: integer
+          minimum: 0
+        unlabeled_count:
+          type: integer
+          minimum: 0
+        suggestion_count:
+          type: integer
+          minimum: 0
+        per_class:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+        per_split:
+          type: object
+          required: [train, val, test, unassigned]
+          properties:
+            train:
+              type: integer
+              minimum: 0
+            val:
+              type: integer
+              minimum: 0
+            test:
+              type: integer
+              minimum: 0
+            unassigned:
+              type: integer
+              minimum: 0
+        active_model_ref:
+          oneOf:
+            - $ref: "#/components/schemas/Ref"
+            - type: "null"
+        has_active_job:
+          type: boolean
+    JobCreateRequest:
+      type: object
+      properties:
+        epochs:
+          type: integer
+          minimum: 1
+          default: 10
+        batch_size:
+          type: integer
+          minimum: 1
+          default: 32
+        learning_rate:
+          type: number
+          exclusiveMinimum: 0
+          default: 0.001
+        seed:
+          type: integer
+          default: 42
+        augmentation:
+          type: boolean
+          default: true
+        use_baseline:
+          type: boolean
+          default: true
+    Job:
+      type: object
+      required: [ref, status, current_epoch, total_epochs, model_ref, failed]
+      properties:
+        ref:
+          $ref: "#/components/schemas/Ref"
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        current_epoch:
+          type: integer
+          minimum: 0
+        total_epochs:
+          type: integer
+          minimum: 1
+        model_ref:
+          oneOf:
+            - $ref: "#/components/schemas/Ref"
+            - type: "null"
+        failed:
+          type: boolean
+    JobLogEntry:
+      type: object
+      required: [epoch, train_loss, val_loss, val_accuracy, duration_seconds]
+      properties:
+        epoch:
+          type: integer
+          minimum: 1
+        train_loss:
+          type: number
+        val_loss:
+          type: number
+        val_accuracy:
+          type: number
+          minimum: 0
+          maximum: 1
+        duration_seconds:
+          type: number
+          minimum: 0
+    ClassMetric:
+      type: object
+      required: [precision, recall, f1, support]
+      properties:
+        precision:
+          type: number
+          minimum: 0
+          maximum: 1
+        recall:
+          type: number
+          minimum: 0
+          maximum: 1
+        f1:
+          type: number
+          minimum: 0
+          maximum: 1
+        support:
+          type: integer
+          minimum: 0
+    Metrics:
+      type: object
+      required: [accuracy, per_class, confusion_matrix]
+      properties:
+        accuracy:
+          type: number
+          minimum: 0
+          maximum: 1
+        per_class:
+          type: object
+          description: 8 クラスすべてのキーを持つ（REQ-OBS-006a）。
+          additionalProperties:
+            $ref: "#/components/schemas/ClassMetric"
+          minProperties: 8
+        confusion_matrix:
+          type: object
+          required: [labels, matrix]
+          properties:
+            labels:
+              type: array
+              minItems: 8
+              maxItems: 8
+              items:
+                $ref: "#/components/schemas/ClassId"
+            matrix:
+              type: array
+              items:
+                type: array
+                items:
+                  type: integer
+                  minimum: 0
+    Model:
+      type: object
+      required: [ref, version, builtin, active, metrics]
+      properties:
+        ref:
+          $ref: "#/components/schemas/Ref"
+        version:
+          type: integer
+          minimum: 0
+        builtin:
+          type: boolean
+        active:
+          type: boolean
+        metrics:
+          oneOf:
+            - $ref: "#/components/schemas/Metrics"
+            - type: "null"
+    ClassScore:
+      type: object
+      required: [class_id, confidence]
+      properties:
+        class_id:
+          $ref: "#/components/schemas/ClassId"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    Inference:
+      type: object
+      required:
+        - ref
+        - image_ref
+        - model_ref
+        - top_class_id
+        - top_confidence
+        - other_mass
+        - low_confidence
+        - created_at
+        - scores
+      properties:
+        ref:
+          $ref: "#/components/schemas/Ref"
+        image_ref:
+          $ref: "#/components/schemas/Ref"
+        model_ref:
+          $ref: "#/components/schemas/Ref"
+        top_class_id:
+          $ref: "#/components/schemas/ClassId"
+        top_confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        other_mass:
+          oneOf:
+            - type: number
+              minimum: 0
+              maximum: 1
+            - type: "null"
+        low_confidence:
+          type: boolean
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+        scores:
+          type: array
+          minItems: 8
+          maxItems: 8
+          description: 8 クラス。信頼度の降順（REQ-F-INF-008）。
+          items:
+            $ref: "#/components/schemas/ClassScore"
+    InferenceCreateJson:
+      type: object
+      required: [refs]
+      properties:
+        refs:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Ref"
+    InferenceCreateRequest:
+      type: object
+      properties:
+        files:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            format: binary
+        refs:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Ref"
+    InferenceCreateResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Inference"
+    Suggestion:
+      type: object
+      required: [image_ref, class_id, confidence, model_ref]
+      properties:
+        image_ref:
+          $ref: "#/components/schemas/Ref"
+        class_id:
+          $ref: "#/components/schemas/ClassId"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        model_ref:
+          $ref: "#/components/schemas/Ref"
+    SuggestionCreateRequest:
+      type: object
+      properties:
+        refs:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/Ref"
+          description: 省略時は未ラベル画像から最大 100 枚。
+    SuggestionCreateResult:
+      type: object
+      required: [generated_count, skipped_labeled_count]
+      properties:
+        generated_count:
+          type: integer
+          minimum: 0
+        skipped_labeled_count:
+          type: integer
+          minimum: 0
+    RefListRequest:
+      type: object
+      required: [refs]
+      properties:
+        refs:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Ref"
+    ThresholdAcceptRequest:
+      type: object
+      required: [min_confidence]
+      properties:
+        min_confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    ObservationClass:
+      type: object
+      required: [class_id, display_order]
+      properties:
+        class_id:
+          $ref: "#/components/schemas/ClassId"
+        display_order:
+          type: integer
+          minimum: 1
+          maximum: 8
+    ObservationState:
+      type: object
+      required: [schema_version, observed_at, classes, images, jobs, models, inferences]
+      description: SRS 3.1.3 の必須キー。追加キーは許容する。
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        observed_at:
+          $ref: "#/components/schemas/DateTime"
+        classes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObservationClass"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/Image"
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Job"
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/Model"
+        inferences:
+          type: array
+          items:
+            $ref: "#/components/schemas/Inference"
