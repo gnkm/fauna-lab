@@ -1,3 +1,20 @@
 {
-  "install": "pnpm install && python3 -m pip install --user uv && PATH=\"$HOME/.local/bin:$PATH\" uv sync --directory backend --frozen"
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "install": "set -eu; sudo service docker start; n=0; until sudo docker info >/dev/null 2>&1; do n=$((n+1)); [ \"$n\" -le 30 ] || exit 1; sleep 1; done; pnpm install; uv sync --directory backend --frozen; sudo docker compose build",
+  "start": "sudo service docker start",
+  "terminals": [
+    {
+      "name": "app",
+      "description": "提出と同じ単一起動。Cloud では docker compose。イメージは install で build 済み。",
+      "command": "docker compose up --pull never"
+    }
+  ],
+  "ports": [
+    {
+      "name": "FaunaLab HTTP",
+      "port": 8000
+    }
+  ]
 }
