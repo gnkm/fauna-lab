@@ -9,14 +9,30 @@ Verification mapping:
 
 from __future__ import annotations
 
+import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
+from faunalab.api.state import (
+    _image_to_obs,
+    _inference_to_obs,
+    _job_to_obs,
+    _model_to_obs,
+    utc_now_z,
+)
 from faunalab.domain.classes import SYSTEM_CLASSES
-from faunalab.persist.store import DATA_SUBDIRS, DB_FILENAME
+from faunalab.persist.store import (
+    DATA_SUBDIRS,
+    DB_FILENAME,
+    ImageRow,
+    InferenceRow,
+    JobRow,
+    ModelRow,
+)
 from faunalab.settings import Settings
 
 REQUIRED_STATE_KEYS = frozenset(
@@ -125,7 +141,7 @@ def test_generated_files_stay_under_data_dir(
 
 
 def test_missing_assets_still_starts(settings: Settings) -> None:
-    """REQ-CON-007 / REQ-F-BASE-006: assets 欠落でも起動し、版 0 は登録しない（F010）。"""
+    """REQ-CON-007: assets 欠落でも起動し、版 0 は登録しない（F010）。"""
     assert not settings.assets_dir.exists()
     with TestClient(create_app(settings)) as client:
         body = client.get("/api/_state").json()
@@ -179,6 +195,102 @@ def test_state_is_reachable_when_ui_is_mounted(tmp_path: Path) -> None:
     assert len(state.json()["classes"]) == 8
     assert page.status_code == 200
     assert "FaunaLab" in page.text
+
+
+def test_running_job_is_failed_on_restart(settings: Settings) -> None:
+    """DESIGN 5.5: 起動時に残存 RUNNING を FAILED へ直す。"""
+    with TestClient(create_app(settings)) as client:
+        client.get("/api/_state")
+    db = settings.data_dir / DB_FILENAME
+    conn = sqlite3.connect(db)
+    conn.execute(
+        """
+        INSERT INTO jobs (ref, status, current_epoch, total_epochs, created_at)
+        VALUES (?, 'RUNNING', 3, 10, ?)
+        """,
+        ("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "2026-09-12T03:04:05Z"),
+    )
+    conn.commit()
+    conn.close()
+    with TestClient(create_app(settings)) as client:
+        jobs = client.get("/api/_state").json()["jobs"]
+    assert len(jobs) == 1
+    assert jobs[0]["status"] == "FAILED"
+    assert jobs[0]["failed"] is True
+    assert jobs[0]["current_epoch"] == 3
+    assert jobs[0]["model_ref"] is None
+
+
+def test_observation_mappers_omit_internal_columns() -> None:
+    image = _image_to_obs(
+        ImageRow(
+            ref="aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            sha256="e" * 64,
+            split="train",
+            label_class_id="samoyed",
+            label_source="human",
+            suggestion_class_id=None,
+            suggestion_confidence=None,
+            suggestion_model_ref=None,
+            created_at="2026-09-12T03:04:05Z",
+        )
+    )
+    assert set(image) == {"ref", "sha256", "split", "label", "suggestion"}
+    assert image["label"] == {"class_id": "samoyed", "source": "human"}
+    assert image["suggestion"] is None
+
+    job = _job_to_obs(
+        JobRow(
+            ref="aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            status="CANCELED",
+            current_epoch=1,
+            total_epochs=10,
+            model_ref=None,
+            created_at="2026-09-12T03:04:05Z",
+        )
+    )
+    assert job["failed"] is False
+    assert set(job) == {
+        "ref",
+        "status",
+        "current_epoch",
+        "total_epochs",
+        "model_ref",
+        "failed",
+    }
+
+    model = _model_to_obs(
+        ModelRow(
+            ref="aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            version=1,
+            builtin=False,
+            active=True,
+            metrics=None,
+            created_at="2026-09-12T03:04:05Z",
+        )
+    )
+    assert set(model) == {"ref", "version", "builtin", "active", "metrics"}
+
+    inference = _inference_to_obs(
+        InferenceRow(
+            ref="aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            image_ref="bbbbbbbb-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            model_ref="cccccccc-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            top_class_id="boxer",
+            top_confidence=0.9,
+            other_mass=0.1,
+            low_confidence=False,
+            scores=[{"class_id": "boxer", "confidence": 0.9}],
+            created_at="2026-09-12T03:04:05Z",
+        )
+    )
+    assert "id" not in inference
+    assert inference["scores"][0]["class_id"] == "boxer"
+    assert utc_now_z(datetime(2026, 9, 12, 3, 4, 5)).endswith("Z")
+    naive = datetime(2026, 9, 12, 3, 4, 5)
+    assert utc_now_z(naive) == "2026-09-12T03:04:05Z"
+    aware = datetime(2026, 9, 12, 3, 4, 5, tzinfo=UTC)
+    assert utc_now_z(aware) == "2026-09-12T03:04:05Z"
 
 
 def _file_fingerprint(root: Path) -> dict[str, int]:
