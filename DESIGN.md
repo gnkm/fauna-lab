@@ -115,12 +115,13 @@ web/              # Vite + React + TypeScript
 ### 2.3 ライセンス確認（REQ-CON-003）
 
 1. 依存追加の Issue / PR にパッケージ名、版、SPDX 識別子を書く。
-2. SPDX が OSI 承認（MIT、Apache-2.0、BSD-2/3-Clause、ISC、PSF-2.0、MPL-2.0、Unlicense、BlueOak-1.0.0、HPND 等）であることを確認する。
+2. SPDX が OSI 承認（MIT、Apache-2.0、BSD-2/3-Clause、ISC、PSF-2.0、MPL-2.0、Unlicense、BlueOak-1.0.0、HPND、MIT-CMU 等）であることを確認する。
 3. メタデータが空または Custom なら LICENSE 本文を読む。対応が取れなければ採用しない。
 4. GPL / AGPL / SSPL は OSI 承認でも **依存として採用しない**（許諾的な側へ寄せる解釈。緩める場合は人間が Issue で決める）。
 5. セットアップ段階でライセンス一覧を生成してリポジトリに残す。実行段階ではライセンス取得のためにネットへ出ない。
 6. ベースライン重みは `MANIFEST.json` の BSD-3-Clause を正とする。`assets/` は改変しない。
 7. Vite / browserslist 経由の `caniuse-lite` は CC-BY-4.0（ブラウザ機能表）。実行時ネット無し。許可するのは **`caniuse-lite` のみ**（ARCHITECTURE.md 4.1.6）。他の Creative Commons 依存は Issue で人間が決める。
+8. 画像デコードとサムネイルに **Pillow**（SPDX `MIT-CMU`。HPND 系の許諾的ライセンス）を使う。`python-multipart` は Apache-2.0。
 
 ### 2.4 不採用（転記）
 
@@ -193,8 +194,18 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 
 ### 3.4 未決（API）
 
-- 各操作の応答 JSON のうち、`openapi.yaml` にまだ無い追加フィールド。骨格の必須キーは契約済み。
+- 各操作の応答 JSON のうち、`openapi.yaml` にまだ無い追加フィールド。骨格の必須キーは契約済み。画像の `original_name` / `size_bytes` / `width` / `height` / `created_at` / `media_type` は F008 で契約した。
 - ページングを cursor にする必要が出た場合。想定規模 5,000 では offset で足りる。
+
+### 3.5 画像の登録と削除（F008）
+
+- `POST /api/images` のフィールド名は `files`。1 ファイルだけの失敗は HTTP 413 / 415 / 409（`payload_too_large` / `unsupported_media_type` / `image_duplicate`）。複数ファイルは 1 件でも成功すれば 200、全件失敗でも件別結果を 200 で返す（I-API-001）。VER-F-IMG-001 のステータス区別は単一ファイル要求で行う。
+- 形式はマジックバイトとデコードの両方で判定する。拡張子は見ない。デコード不能は 415 相当で拒否し、処理を続ける（REQ-ATT-REL-003）。
+- 1 ファイル 10 MiB はバイト数。`Content-Length` が 50×10 MiB 超なら要求全体を 413。各パートは全量をメモリへ載せる前に大きさ判定する（REQ-ATT-SEC-005）。
+- 記憶域のファイル名は内容の SHA-256（小文字 hex）と検出した拡張子。由来する名称は `images.original_name` に値として保存し、パスに使わない（REQ-ATT-SEC-001）。作成モードは 0644（実行ビットなし、REQ-ATT-SEC-002）。
+- サムネイルは `thumbs/{sha256}.jpg`。長辺 256、アスペクト比保持、媒体型 JPEG。
+- 展開後の画素数は 25,000,000（約 5000×5000）を上限とする。超過および Pillow の `DecompressionBombError` は許可形式でないものとして拒否する（I-IMG-002）。
+- 登録はファイルを置いてから SHA-256 一意制約で挿入する。重複側は共有パスを削除しない。ref は挿入後にだけ公開される。
 
 ---
 
@@ -558,6 +569,12 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超 JPEG でステータスが異�
 
 **I-API-003 一覧の向き**
 8.2 は試験再現のため `_state` の配列を昇順に固定する。プログラムインタフェースは利用者が新しいものを見る用途なので、`GET /api/jobs` と `GET /api/inferences` は `created_at` 降順、同刻は `ref` 降順とする。`GET /api/images` は 8.2 と同じ昇順。`GET /api/models` は版番号降順。いずれも第二キーまで含めて一意（REQ-API-006）。
+
+**I-IMG-001 単一ファイルの HTTP ステータス**
+VER-F-IMG-001 は偽装テキストと 10 MiB 超でステータスが異なることを求める。複数アップロードの部分成功は 200 に固定するため、当該検証はファイルを 1 件ずつ送る。件別 `code` は同じ語彙（`unsupported_media_type` / `payload_too_large`）を使う。
+
+**I-IMG-002 画素数上限**
+SRS は圧縮後 10 MiB 以外の寸法上限を定めない。展開爆弾を 500 にせず拒否するため、画素は 25,000,000 を超えたら JPEG/PNG として受理しない。Pillow の `DecompressionBombError` も同じ扱いとする。
 
 **I-USE-001 犬種知識を前提にしない**
 人手の 1 枚ラベルを必須手順にしない。主経路はサンプル投入 → 候補生成と採用 → 学習 → 推論とする（REQ-USE-001）。
