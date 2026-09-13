@@ -1318,6 +1318,8 @@ components:
         - per_class
         - per_split
         - active_model_ref
+        - active_model
+        - baseline_registered
         - has_active_job
       properties:
         image_count:
@@ -1357,8 +1359,27 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Ref"
             - type: "null"
+        active_model:
+          oneOf:
+            - $ref: "#/components/schemas/ActiveModelSummary"
+            - type: "null"
+        baseline_registered:
+          type: boolean
+          description: 版 0 のベースラインが登録されているか
         has_active_job:
           type: boolean
+    ActiveModelSummary:
+      type: object
+      required: [ref, version, builtin]
+      properties:
+        ref:
+          $ref: "#/components/schemas/Ref"
+        version:
+          type: integer
+          minimum: 0
+        builtin:
+          type: boolean
+          description: true ならベースライン（版 0）
     JobCreateRequest:
       type: object
       properties:

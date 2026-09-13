@@ -446,7 +446,20 @@ class Store:
             ):
                 per_split[str(row["split"])] = int(row["n"])
             active = conn.execute(
-                "SELECT ref FROM models WHERE active = 1 LIMIT 1"
+                """
+                SELECT ref, version, builtin
+                FROM models
+                WHERE active = 1
+                LIMIT 1
+                """
+            ).fetchone()
+            baseline = conn.execute(
+                """
+                SELECT 1 AS n
+                FROM models
+                WHERE version = 0 AND builtin = 1
+                LIMIT 1
+                """
             ).fetchone()
             job = conn.execute(
                 """
@@ -455,6 +468,13 @@ class Store:
                 LIMIT 1
                 """
             ).fetchone()
+        active_model = None
+        if active is not None:
+            active_model = {
+                "ref": str(active["ref"]),
+                "version": int(active["version"]),
+                "builtin": bool(active["builtin"]),
+            }
         return {
             "image_count": image_count,
             "labeled_count": labeled_count,
@@ -462,7 +482,9 @@ class Store:
             "suggestion_count": suggestion_count,
             "per_class": per_class,
             "per_split": per_split,
-            "active_model_ref": None if active is None else str(active["ref"]),
+            "active_model_ref": None if active_model is None else active_model["ref"],
+            "active_model": active_model,
+            "baseline_registered": baseline is not None,
             "has_active_job": job is not None,
         }
 
