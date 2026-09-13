@@ -465,3 +465,46 @@ def test_empty_refs_and_non_json_are_400(baseline_client: TestClient) -> None:
     )
     assert invalid.status_code == 400
     assert invalid.json()["code"] == "validation_error"
+
+
+def test_generate_counts_labels_applied_during_infer(
+    baseline_client: TestClient,
+) -> None:
+    """推論中に確定ラベルが付いた画像も skipped_labeled_count に含める。"""
+    refs = _upload_n(baseline_client, 2)
+    store = _client_store(baseline_client)
+    app = baseline_client.app
+    assert isinstance(app, FastAPI)
+    runtime = app.state.baseline_runtime
+    assert runtime is not None
+
+    def infer(images: list[Any]) -> list[FoldResult]:
+        store.upsert_label(refs[0], "samoyed", "human", "2026-01-01T00:00:00Z")
+        return [_fold("boxer", 0.9) for _ in images]
+
+    with patch.object(runtime, "infer_images", side_effect=infer):
+        response = baseline_client.post("/api/suggestions", json={"refs": refs})
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "generated_count": 1,
+        "skipped_labeled_count": 1,
+    }
+    by_ref = {
+        item["ref"]: item
+        for item in baseline_client.get("/api/_state").json()["images"]
+    }
+    assert by_ref[refs[0]]["label"] == {"class_id": "samoyed", "source": "human"}
+    assert by_ref[refs[0]]["suggestion"] is None
+    assert by_ref[refs[1]]["suggestion"]["class_id"] == "boxer"
+
+
+def test_runtime_openapi_includes_suggestion_create_body(client: TestClient) -> None:
+    body = client.get("/openapi.json").json()
+    post = body["paths"]["/api/suggestions"]["post"]
+    assert "requestBody" in post
+    schema = post["requestBody"]["content"]["application/json"]["schema"]
+    dumped = str(schema) + str(body.get("components", {}).get("schemas", {}))
+    assert "SuggestionCreateRequest" in dumped or "refs" in dumped
+    schemas = body.get("components", {}).get("schemas", {})
+    assert "SuggestionCreateRequest" in schemas
+    assert "refs" in schemas["SuggestionCreateRequest"].get("properties", {})
