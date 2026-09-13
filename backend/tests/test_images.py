@@ -18,6 +18,7 @@ import stat
 from pathlib import Path
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
@@ -400,3 +401,41 @@ def test_delete_removes_suggestion(client: TestClient, settings: Settings) -> No
     state = client.get("/api/_state").json()
     assert state["images"] == []
     assert state["models"][0]["version"] == 1
+
+
+def test_duplicate_insert_does_not_remove_winner_files(
+    client: TestClient, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = _jpeg(color=(7, 8, 9))
+    first = _upload(client, [("a.jpg", payload, "image/jpeg")])
+    assert first.status_code == 200
+    images_before = sorted(p.name for p in (settings.data_dir / "images").iterdir())
+    thumbs_before = sorted(p.name for p in (settings.data_dir / "thumbs").iterdir())
+    monkeypatch.setattr(
+        "faunalab.persist.store.Store.sha256_exists",
+        lambda self, sha256: False,
+    )
+    second = _upload(client, [("b.jpg", payload, "image/jpeg")])
+    assert second.status_code == 409
+    assert second.json()["code"] == "image_duplicate"
+    image_names = sorted(p.name for p in (settings.data_dir / "images").iterdir())
+    thumb_names = sorted(p.name for p in (settings.data_dir / "thumbs").iterdir())
+    assert image_names == images_before
+    assert thumb_names == thumbs_before
+    assert len(_state_images(client)) == 1
+
+
+def test_delete_succeeds_when_file_unlink_fails(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = _jpeg(color=(1, 2, 4))
+    uploaded = _upload(client, [("keep.jpg", payload, "image/jpeg")])
+    ref = uploaded.json()["items"][0]["ref"]
+
+    def boom(_root: Path, _relative: str) -> None:
+        raise OSError("busy")
+
+    monkeypatch.setattr("faunalab.api.images.remove_if_present", boom)
+    deleted = client.delete(f"/api/images/{ref}")
+    assert deleted.status_code == 204
+    assert _state_images(client) == []

@@ -28,6 +28,31 @@ def test_decode_rejects_unknown_format() -> None:
         decode_and_thumbnail(b"GIF89a" + b"\x00" * 20)
 
 
+def test_pixel_limit_is_rejected_before_full_load(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("faunalab.domain.images.MAX_IMAGE_PIXELS", 100)
+    image = Image.new("RGB", (20, 20), (1, 2, 3))
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG")
+    with pytest.raises(UnsupportedImageError):
+        decode_and_thumbnail(buffer.getvalue())
+
+
+def test_decompression_bomb_is_unsupported(monkeypatch: pytest.MonkeyPatch) -> None:
+    image = Image.new("RGB", (8, 8), (4, 5, 6))
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG")
+    payload = buffer.getvalue()
+
+    def boom(self: Image.Image) -> None:
+        raise Image.DecompressionBombError("too many pixels")
+
+    monkeypatch.setattr(Image.Image, "load", boom)
+    with pytest.raises(UnsupportedImageError):
+        decode_and_thumbnail(payload)
+
+
 def test_rgba_png_thumbnail() -> None:
     image = Image.new("RGBA", (12, 8), (10, 20, 30, 128))
     buffer = io.BytesIO()

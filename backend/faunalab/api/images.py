@@ -132,12 +132,7 @@ def _register_one(store: Store, filename: str, data: bytes) -> dict[str, Any]:
     thumb_rel = thumb_relpath(digest)
     ref = str(uuid.uuid4())
     created_at = utc_now_z()
-    written: list[str] = []
     try:
-        write_bytes(store.data_dir, image_rel, data)
-        written.append(image_rel)
-        write_bytes(store.data_dir, thumb_rel, decoded.thumbnail_jpeg)
-        written.append(thumb_rel)
         store.insert_image(
             ref=ref,
             sha256=digest,
@@ -149,20 +144,31 @@ def _register_one(store: Store, filename: str, data: bytes) -> dict[str, Any]:
             created_at=created_at,
         )
     except DuplicateImageError:
-        for relative in written:
-            try:
-                remove_if_present(store.data_dir, relative)
-            except ValueError:
-                LOGGER.warning("refused to delete path outside data dir")
+        # 共有パスのファイルは勝った側のものなので消さない。
         return _failed_item(filename, "image_duplicate")
+    written: list[str] = []
+    try:
+        write_bytes(store.data_dir, image_rel, data)
+        written.append(image_rel)
+        write_bytes(store.data_dir, thumb_rel, decoded.thumbnail_jpeg)
+        written.append(thumb_rel)
     except Exception:
+        store.delete_image(ref)
         for relative in written:
-            try:
-                remove_if_present(store.data_dir, relative)
-            except ValueError:
-                LOGGER.warning("refused to delete path outside data dir")
+            _remove_stored_file(store, relative)
         raise
     return _ok_item(filename, ref)
+
+
+def _remove_stored_file(store: Store, relative: str) -> None:
+    if not relative:
+        return
+    try:
+        remove_if_present(store.data_dir, relative)
+    except ValueError:
+        LOGGER.warning("refused to delete path outside data dir")
+    except OSError:
+        LOGGER.warning("failed to remove stored file %s", relative)
 
 
 def _upload_http_result(items: list[dict[str, Any]]) -> JSONResponse | dict[str, Any]:
@@ -279,9 +285,4 @@ def delete_image(request: Request, ref: str) -> None:
         raise image_not_found()
     thumb_rel = thumb_relpath(row.sha256)
     for relative in (row.path, thumb_rel):
-        if not relative:
-            continue
-        try:
-            remove_if_present(store.data_dir, relative)
-        except ValueError:
-            LOGGER.warning("refused to delete path outside data dir")
+        _remove_stored_file(store, relative)

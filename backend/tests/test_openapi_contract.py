@@ -252,3 +252,21 @@ def test_inference_request_caps_total_at_20() -> None:
         n_refs = branch["properties"]["refs"]["maxItems"]
         assert n_files == branch["properties"]["files"]["minItems"]
         assert n_files + n_refs == 20
+
+
+def test_state_uses_observation_image_schema() -> None:
+    yaml = pytest.importorskip("yaml")
+    doc = yaml.safe_load(OPENAPI_PATH.read_text(encoding="utf-8"))
+    required = doc["components"]["schemas"]["ObservationImage"]["required"]
+    assert required == ["ref", "sha256", "split", "label", "suggestion"]
+    assert "original_name" not in required
+    state_items = doc["components"]["schemas"]["ObservationState"]["properties"][
+        "images"
+    ]["items"]["$ref"]
+    assert state_items.endswith("ObservationImage")
+    extra = doc["components"]["schemas"]["Image"]["allOf"][1]["required"]
+    assert "original_name" in extra
+    page_items = doc["components"]["schemas"]["ImagePage"]["allOf"][1]["properties"][
+        "items"
+    ]["items"]["$ref"]
+    assert page_items.endswith("Image")

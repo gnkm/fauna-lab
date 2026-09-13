@@ -19,6 +19,10 @@ MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_UPLOAD_FILES = 50
 THUMB_LONG_EDGE = 256
 MAX_ORIGINAL_NAME_CHARS = 1024
+# 10 MiB 圧縮でも展開後が巨大になりうる。5000×5000 相当で止める。
+MAX_IMAGE_PIXELS = 25_000_000
+
+Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 
 JPEG_MAGIC = b"\xff\xd8\xff"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
@@ -97,10 +101,12 @@ def decode_and_thumbnail(data: bytes) -> DecodedImage:
                 raise UnsupportedImageError
             if fmt != sniffed:
                 raise UnsupportedImageError
-            loaded.load()
             width, height = loaded.size
             if width <= 0 or height <= 0:
                 raise UnsupportedImageError
+            if width * height > MAX_IMAGE_PIXELS:
+                raise UnsupportedImageError
+            loaded.load()
             thumbnail = _jpeg_thumbnail(loaded)
             return DecodedImage(
                 fmt=sniffed,
@@ -109,6 +115,8 @@ def decode_and_thumbnail(data: bytes) -> DecodedImage:
                 height=height,
                 thumbnail_jpeg=thumbnail,
             )
+    except Image.DecompressionBombError as exc:
+        raise UnsupportedImageError from exc
     except (UnidentifiedImageError, OSError, ValueError, SyntaxError) as exc:
         raise UnsupportedImageError from exc
 
