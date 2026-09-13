@@ -2,4 +2,15 @@
 node_modules/
 .env
 .cursor-audit.jsonl
+.cursor-audit.log
 /data/
+.venv/
+backend/.venv/
+web/dist/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/

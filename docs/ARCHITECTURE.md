@@ -23,7 +23,7 @@
 | 学習 | PyTorch CPU。ベースライン利用時は凍結 embedding + 分類ヘッド。GPU は任意 |
 | フロントエンド | TypeScript + Vite + React。静的成果物を API と同じオリジンで配信 |
 | パッケージ管理 | バックエンドは uv（`pyproject.toml` / `uv.lock`）、フロントは既存の pnpm |
-| 静的解析 | フロントは Biome、バックエンドは Ruff（型は Pyright または mypy。骨格 Issue で設定） |
+| 静的解析 | フロントは Biome、バックエンドは Ruff、型は Pyright |
 | 試験 | pytest（API / `_state`）、Playwright（UI の一部） |
 | 実行環境 | **Podman**（ローカルおよび提出）。単一コマンドは Compose |
 | Cloud Agent | 同一 OCI イメージを **Docker Compose** で起動する。Podman は使わない |
@@ -136,8 +136,9 @@ REQ-CON-003 は、依存ライブラリを OSI 承認のオープンソースラ
 1. 依存を追加する Issue / PR で、パッケージ名、版、SPDX 識別子を書く。
 2. SPDX が OSI 承認（MIT、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、PSF-2.0、MPL-2.0、Unlicense、BlueOak-1.0.0、HPND 等）であることを確認する。
 3. メタデータが空または「Custom」の場合は、配布されている LICENSE 本文を読み、OSI 承認との対応が取れなければ採用しない。
-4. セットアップ段階（ネットワーク可）でライセンス一覧を生成してリポジトリに残す手段を、骨格 Issue で入れる。実行段階ではライセンス取得のためにネットへ出ない。
+4. セットアップ段階（ネットワーク可）で `pnpm export-licenses`（`scripts/export_licenses.py`）を実行し、`docs/dependency-licenses-python.md` と `docs/dependency-licenses-web.txt` をリポジトリに残す。実行段階ではライセンス取得のためにネットへ出ない。
 5. ベースライン重みとサンプル画像のライセンスは配布資産の記載を正とする（`MANIFEST.json` のモデルは BSD-3-Clause）。`assets/` は改変しない。
+6. Vite / browserslist がセットアップ段階でロックする `caniuse-lite` は **CC-BY-4.0** である。ソフトウェアライセンスではなくブラウザ機能表の帰属付きデータであり、実行時にネットへ取りに行かない。REQ-CON-003 の「同等以上に許諾的」として **`caniuse-lite` のみ** 許可する。他の Creative Commons 依存を足す場合は Issue で人間が決める。
 
 ### 4.2 プロジェクトとしての追加方針
 
@@ -164,11 +165,11 @@ GPL / AGPL / SSPL 等は OSI 承認でも、成果物全体を copyleft にす�
 
 待受は HTTP/1.1。Compose ではコンテナ内プロセスは常に 8000 で待ち受け、ホスト公開だけを `FAUNALAB_PORT`（既定 8000）で変える（REQ-COM-001）。公開と待受の対応は 5.2 と 6.1 を正とする。
 
-アプリケーションコードは、ループバックと同一ホスト内通信を除き、外部ネットワークへ接続しない。Compose のポート公開は inbound のみを意図する。実行時に依存やモデルを取得するクライアントを置かない。
+アプリケーションコードは、ループバックと同一ホスト内通信を除き、外部ネットワークへ接続しない。Compose のポート公開は inbound のみを意図する。実行時に依存やモデルを取得するクライアントを置かない。FastAPI の Swagger UI / ReDoc は CDN に依存するため `docs_url` / `redoc_url` を無効化し、契約は `/openapi.json` で出す。
 
 ### 5.2 Compose の契約
 
-リポジトリ直下の `compose.yaml`（F004）は、次を満たす。アプリ本体は後続の骨格 Issue で置き換える。イメージとマウントの契約は本節が正である。
+リポジトリ直下の `compose.yaml`（F004）は、次を満たす。イメージとマウントの契約は本節が正である。骨格 Issue でアプリ本体（Uvicorn + `web/dist`）に置き換えた。
 
 - サービス名は `app` のみ。
 - ビルド文脈はリポジトリルート。イメージ名は `faunalab:local`。実行時は `pull_policy: never`（レジストリへ取りに行かない）。
@@ -264,16 +265,17 @@ backend/                 # Python パッケージ（uv / pyproject.toml）
   faunalab/
     settings.py          # 環境変数
     api/                 # HTTP。観測と、後続で増えるプログラムインタフェース
+      app.py             # FastAPI アプリ工場。静的 UI を同一オリジンで配信
       state.py           # GET /api/_state の変換
     domain/              # 不変条件とユースケース。HTTP に依存しない
     persist/             # SQLite とファイル I/O
     ml/                  # 前処理、ベースライン畳み込み、学習、評価、ONNX 書き出し
     jobs/                # キュー、ワーカプロセス、中止
+  tests/                 # pytest（ネットワークなし）
 web/                     # Vite + React + TypeScript
 compose.yaml
 Containerfile
 Dockerfile               # Containerfile と同一。Docker 互換
-container/www/           # プレースホルダ静的ファイル（骨格 Issue で廃止）
 container/entrypoint.sh  # rootful のみ UID 降下。ルートレスでは uid 0 のまま
 docs/ARCHITECTURE.md     # 本ファイル
 docs/source-of-truth/    # 読み取り専用
@@ -294,10 +296,10 @@ data/                    # 実行時（git 対象外）
 | `_state` 契約、指標、前処理、ジョブ遷移、ベースライン期待値 | pytest | ネットワークなし。フィクスチャ画像は `assets/fixtures/` を読む |
 | プログラムインタフェース | pytest + HTTPX（ASGI） | OpenAPI が出揃ってから拡充 |
 | UI の一部 | Playwright | 状態変更を UI で行い、結果を `_state` で確認する経路から追加 |
-| 静的解析 | Biome / Ruff | REQ-ATT-MNT-003。設定はリポジトリに含める |
-| カバレッジ | pytest-cov | 行カバレッジ 70 % 以上（REQ-ATT-MNT-001） |
+| 静的解析 | Biome / Ruff / Pyright | REQ-ATT-MNT-003。設定はリポジトリに含める |
+| カバレッジ | pytest-cov | 行カバレッジ 70 % 以上（REQ-ATT-MNT-001）。計測は骨格から入れる。閾値の fail は F018/F019 |
 
-試験の単一コマンドは骨格 Issue で `compose` または `uv run pytest` に固定する。実行段階と同様、試験実行も外部ネットワークに依存しない。Playwright のブラウザ取得はセットアップ（イメージビルドまたは Cloud の `install`）に置く。
+試験の単一コマンドは `pnpm test`（内部は `uv run --directory backend pytest`）。静的解析の単一コマンドは `pnpm lint`。実行段階と同様、試験実行も外部ネットワークに依存しない。Playwright のブラウザ取得はセットアップ（イメージビルドまたは Cloud の `install`）に置く。
 
 ---
 
@@ -310,7 +312,7 @@ data/                    # 実行時（git 対象外）
 - SQLite の表定義の詳細、`ref` の具体形式（不変・非再利用だけは SRS どおり）
 - UI の画面 URL 設計、コンポーネント構成
 - `DESIGN.md` / `openapi.yaml` の本文（実装後に一致させる）
-- `.cursor/environment.json` の `install` を Python 込みへ更新すること（骨格と lockfile ができたとき）
+- pytest-cov の 70 % 閾値 enforce（F018/F019。骨格時点では計測のみ）
 
 観測インタフェース以外の API 詳細は、上記を扱う後続 Issue で決める。
 

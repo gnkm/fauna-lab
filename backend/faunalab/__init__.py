@@ -1,0 +1,1 @@
+"""FaunaLab application package."""
