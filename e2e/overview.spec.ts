@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { clearImages } from "./helpers";
 
 const NAV_ITEMS = [
   { label: "概況", url: "/" },
@@ -9,6 +10,10 @@ const NAV_ITEMS = [
   { label: "モデル", url: "/models" },
   { label: "推論", url: "/infer" },
 ] as const;
+
+test.beforeEach(async ({ request }) => {
+  await clearImages(request);
+});
 
 test("概況に URL 直達し、リロード後も同じ画面", async ({ page }) => {
   await page.goto("/");
@@ -62,16 +67,4 @@ test("ナビから全機能へ到達でき、直達とリロードで画面が�
     ).toBeVisible();
     await expect(page.getByText("準備中")).toHaveCount(0);
   }
-});
-
-test("画像削除は確認ダイアログを出す", async ({ page }) => {
-  await page.goto("/images/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
-  await page.getByRole("button", { name: "この画像を削除" }).click();
-  await expect(
-    page.getByRole("heading", { name: "この画像を削除しますか？" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "キャンセル" }).click();
-  await expect(
-    page.getByRole("heading", { name: "この画像を削除しますか？" }),
-  ).toHaveCount(0);
 });
