@@ -2,10 +2,10 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 対象 Issue | #3（機能 ID F002） |
+| 対象 Issue | #3（機能 ID F002）、#7（機能 ID F006） |
 | 正本 | SRS-FAUNALAB-002 **版 2.2**、TASK-FAUNALAB-001 版 1.0 |
 | 状態 | 実装前の枠と初期判断。実装と食い違ったら実装に合わせて更新する。最終一致確認は F019 |
-| 関連 | 言語・実行形態・データ配置の実装前合意は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（F001 / #2）。本ファイルは提出物の設計書であり、転記したうえで API・誤り・観測変換をここで固定する |
+| 関連 | 言語・実行形態・データ配置の実装前合意は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（F001 / #2）。API パス・誤り語彙の契約は [openapi.yaml](openapi.yaml)（F006 / #7）。本ファイルは提出物の設計書であり、転記したうえで API・誤り・観測変換をここで固定する |
 
 仕様に書かれていない事項ほど厚く書く。未決は「未決」と理由を残す。解釈は 10 節に集約する。
 
@@ -130,7 +130,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 
 ## 3. API 設計
 
-観測エンドポイント以外のパスは仕様が沈黙している。リソースの切り方と命名をここで固定する。JSON の全フィールド名と OpenAPI 本文は実装時に `openapi.yaml` へ落とし、F019 で一致確認する。未記載の細部は **未決** とし、本節の方針から外さない。
+観測エンドポイント以外のパスは仕様が沈黙している。リソースの切り方と命名をここで固定し、骨格を [openapi.yaml](openapi.yaml) に置く。JSON フィールドの最終集合は実装 Issue で足し、F019 で実装と一致させる。未記載の細部は **未決** とし、本節と `openapi.yaml` の方針から外さない。
 
 ### 3.1 方針
 
@@ -139,7 +139,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 - JSON フィールドは snake_case。観測インタフェース（`class_id`、`display_order`、`model_ref`）と揃える。
 - 識別子は観測の `ref` と同一文字列をプログラムインタフェースでも使う。形式は 8 節。
 - 日時は ISO 8601-1 の UTC、末尾 `Z`。
-- 一覧は `limit`（件数制限）と `offset`（位置）を受け付け、`items` と `total` を返す（REQ-API-006）。既定 `limit=50`、上限 `200`。同一条件の順序は一意（8 節のソートキー）。
+- 一覧は `limit`（件数制限）と `offset`（位置）を受け付け、`items` と `total` を返す（REQ-API-006）。既定 `limit=50`、上限 `200`。同一条件の順序は一意。`_state` の配列は 8 節の昇順。プログラムインタフェースのジョブ・推論一覧は新しい順（I-API-003）。
 - Web UI は同一オリジンで API を呼ぶ。`FAUNALAB_CORS_ORIGINS` が空なら CORS は同一オリジンのみ（既定の提出形態）。
 - 破壊的操作の確認ダイアログは UI の責務（REQ-USE-002）。API は確認トークンを要求しない。
 
@@ -193,9 +193,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 
 ### 3.4 未決（API）
 
-- 各操作の応答 JSON の全フィールド（OpenAPI へ実装と同時に書く）。
-- サムネイルの媒体型（JPEG に揃える想定だが、実装時に固定）。
-- `POST /api/images` のフィールド名（`files` 想定）。
+- 各操作の応答 JSON のうち、`openapi.yaml` にまだ無い追加フィールド。骨格の必須キーは契約済み。
 - ページングを cursor にする必要が出た場合。想定規模 5,000 では offset で足りる。
 
 ---
@@ -237,7 +235,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 }
 ```
 
-- `code` が機械判別用の識別子（REQ-API-004）。OpenAPI の誤り語彙に全件を列挙する。
+- `code` が機械判別用の識別子（REQ-API-004）。語彙の正本は `openapi.yaml` の `ErrorCode`。
 - `detail` は利用者へ出してよい説明。日本語。内部パス・SQL・スタックトレースを含めない（REQ-API-005）。
 - `type` は `urn:faunalab:error:{code}`。実行時ネットへ解決しに行かない。
 - 追加フィールド（例: アップロード件別の `items`）は成功応答側に置く。誤り 1 件の本体を配列にはしない。
@@ -266,7 +264,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 | `sample_unavailable` | 422 | `assets/sample/` が無い投入 |
 | `internal_error` | 500 | 予期しない内部誤り |
 
-語彙を増やす場合は接頭辞をリソース名にし、ステータス 7 類のいずれかに必ず対応付ける。新しいステータス番号を勝手に増やさない。
+語彙を増やす場合は接頭辞をリソース名にし、ステータス 7 類のいずれかに必ず対応付ける。新しいステータス番号を勝手に増やさない。増やすときは `openapi.yaml` の `ErrorCode` と本表を同時に更新する。
 
 ---
 
@@ -391,7 +389,7 @@ ONNX Runtime で `logits` を得る。softmax → クラスマップ合算 → �
 | `inferences[].low_confidence` | 閾値（環境変数）と 7.2 の全 0.125 規則 |
 | `inferences[].top_class_id` / `top_confidence` | 8 クラス信頼度の最大。同率は `display_order` が小さい方（解釈 I-OBS-001） |
 
-一覧の決定的順序（API と `_state` で共通の安定ソート）:
+`_state` の決定的順序（試験再現のため昇順。プログラム一覧の向きは I-API-003）:
 
 - `classes`: `display_order` 昇順
 - `images`: `created_at` 昇順、同刻なら `ref` 昇順
@@ -538,6 +536,9 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超 JPEG でステータスが異�
 **I-API-002 ラベル解除**
 1.3.2 は「ラベル解除」を機能に含めるが、3.2.2 は付与・上書き・一括に厚い。解除は `DELETE /api/images/{ref}/label` で確定ラベルを外し、分割は `unassigned` に戻す（確定が無い画像は分割対象外、REQ-F-DS-004）。
 
+**I-API-003 一覧の向き**
+8.2 は試験再現のため `_state` の配列を昇順に固定する。プログラムインタフェースは利用者が新しいものを見る用途なので、`GET /api/jobs` と `GET /api/inferences` は `created_at` 降順、同刻は `ref` 降順とする。`GET /api/images` は 8.2 と同じ昇順。`GET /api/models` は版番号降順。いずれも第二キーまで含めて一意（REQ-API-006）。
+
 **I-USE-001 犬種知識を前提にしない**
 人手の 1 枚ラベルを必須手順にしない。主経路はサンプル投入 → 候補生成と採用 → 学習 → 推論とする（REQ-USE-001）。
 
@@ -573,7 +574,7 @@ REQ-COM-002 は起動後の通常動作で、ループバックと同一ホス�
 
 | 項目 | 理由 |
 | --- | --- |
-| OpenAPI 全文、JSON フィールドの最終集合 | 実装と一致させるのが REQ-API-002。枠だけ先に決め、本文は実装 Issue |
+| JSON フィールドの最終集合 | パス・誤り・ページネーションは F006 の `openapi.yaml`。残る追加フィールドは実装 Issue。一致確認は F019 |
 | SQLite 表定義の列詳細、マイグレーション手段 | 不変条件と `ref` 方針は固定済。DDL は永続化 Issue |
 | UI の画面 URL とコンポーネント分割 | REQ-UI-002 を満たせばよく、骨格 Issue で決める |
 | 型チェッカ（Pyright / mypy）、分類ヘッド層数 | 骨格と学習の測定が必要 |
