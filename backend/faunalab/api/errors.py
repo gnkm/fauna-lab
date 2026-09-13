@@ -27,6 +27,7 @@ ERROR_STATUS: dict[str, int] = {
     "unsupported_media_type": 415,
     "sample_unavailable": 422,
     "empty_test_split": 422,
+    "no_active_model": 422,
     "baseline_unavailable": 422,
     "internal_error": 500,
 }
@@ -67,6 +68,20 @@ def image_not_found() -> AppError:
 
 def model_not_found() -> AppError:
     return error_for_code("model_not_found", "指定したモデル版は存在しません。")
+
+
+def no_active_model() -> AppError:
+    return error_for_code(
+        "no_active_model",
+        "有効モデルが無いため推論を実行できません。",
+    )
+
+
+def baseline_unavailable() -> AppError:
+    return error_for_code(
+        "baseline_unavailable",
+        "有効モデルの推論成果物が利用できません。",
+    )
 
 
 def problem_response(

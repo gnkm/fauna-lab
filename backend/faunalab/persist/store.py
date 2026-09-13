@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from faunalab.domain.classes import CLASS_IDS, SPLIT_IDS, SYSTEM_CLASSES
 from faunalab.persist.files import ensure_dir, remove_tree_if_present
@@ -60,6 +60,10 @@ class ClassRow:
 
 class DuplicateImageError(Exception):
     """SHA-256 uniqueness violation (REQ-F-IMG-006 / REQ-DATA-003)."""
+
+
+class ModelNotFoundError(Exception):
+    """A referenced model ref does not exist."""
 
 
 class ImageNotFoundError(Exception):
@@ -116,6 +120,19 @@ class InferenceRow:
     low_confidence: bool
     scores: Any
     created_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class InferenceNew:
+    ref: str
+    image_ref: str
+    top_class_id: str
+    top_confidence: float
+    other_mass: float | None
+    low_confidence: bool
+    scores: list[dict[str, Any]]
+    created_at: str
+    duration_ms: int | None = None
 
 
 class Store:
@@ -693,13 +710,29 @@ class Store:
                     return None
         return self.get_model(ref)
 
-    def mark_model_deleted(self, ref: str) -> ModelRow | None:
-        existing = self.get_model(ref)
-        if existing is None:
-            return None
+    def purge_trained_model(
+        self, ref: str
+    ) -> Literal["ok", "not_found", "not_deletable"]:
+        """Tombstone a trained model under the same lock as activate.
+
+        Artifact removal stays inside the lock so a concurrent activate cannot
+        keep an active row after the files are gone.
+        """
+
         with self._locked() as conn:
+            row = conn.execute(
+                f"{_MODEL_SELECT} WHERE ref = ? AND deleted = 0",
+                (ref,),
+            ).fetchone()
+            if row is None:
+                return "not_found"
+            if bool(row["builtin"]) or bool(row["active"]):
+                return "not_deletable"
+            artifact_dir = row["artifact_dir"]
+            if artifact_dir:
+                remove_tree_if_present(self.data_dir, artifact_dir)
             with conn:
-                conn.execute(
+                cursor = conn.execute(
                     """
                     UPDATE models
                     SET deleted = 1, active = 0
@@ -707,13 +740,9 @@ class Store:
                     """,
                     (ref,),
                 )
-                still = conn.execute(
-                    f"{_MODEL_SELECT} WHERE ref = ? AND deleted = 0",
-                    (ref,),
-                ).fetchone()
-        if still is not None:
-            return None
-        return existing
+                if cursor.rowcount == 0:
+                    return "not_deletable"
+        return "ok"
 
     def unpublish_builtin(self) -> None:
         """Drop version 0 when unused; otherwise deactivate it."""
@@ -732,42 +761,139 @@ class Store:
                         """
                     )
 
+    def insert_model(
+        self,
+        *,
+        ref: str,
+        version: int,
+        builtin: bool,
+        created_at: str,
+        artifact_dir: str | None = None,
+    ) -> ModelRow:
+        """Insert a model version. Does not change the active selection."""
+
+        with self._locked() as conn:
+            with conn:
+                conn.execute(
+                    """
+                    INSERT INTO models (
+                        ref, version, builtin, active,
+                        metrics_json, artifact_dir, created_at, deleted
+                    )
+                    VALUES (?, ?, ?, 0, NULL, ?, ?, 0)
+                    """,
+                    (ref, version, 1 if builtin else 0, artifact_dir, created_at),
+                )
+        created = self.get_model(ref)
+        if created is None:
+            raise RuntimeError("failed to persist model version")
+        return created
+
+    def insert_inferences(
+        self, *, model_ref: str, items: list[InferenceNew]
+    ) -> list[InferenceRow]:
+        if not items:
+            return []
+        with self._locked() as conn:
+            with conn:
+                model_row = conn.execute(
+                    "SELECT id FROM models WHERE ref = ? AND deleted = 0",
+                    (model_ref,),
+                ).fetchone()
+                if model_row is None:
+                    raise ModelNotFoundError
+                model_id = int(model_row["id"])
+                image_refs = [item.image_ref for item in items]
+                id_by_ref = _image_ids_by_refs(conn, list(dict.fromkeys(image_refs)))
+                if len(id_by_ref) != len(set(image_refs)):
+                    raise ImageNotFoundError
+                for item in items:
+                    conn.execute(
+                        """
+                        INSERT INTO inferences (
+                            ref, image_id, model_id, top_class_id, top_confidence,
+                            other_mass, low_confidence, scores_json, duration_ms,
+                            created_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            item.ref,
+                            id_by_ref[item.image_ref],
+                            model_id,
+                            item.top_class_id,
+                            item.top_confidence,
+                            item.other_mass,
+                            1 if item.low_confidence else 0,
+                            json.dumps(item.scores),
+                            item.duration_ms,
+                            item.created_at,
+                        ),
+                    )
+                refs = [item.ref for item in items]
+                placeholders = ",".join("?" * len(refs))
+                rows = conn.execute(
+                    f"{_INFERENCE_SELECT} WHERE inf.ref IN ({placeholders})",
+                    refs,
+                ).fetchall()
+        decoded = [_inference_row(row) for row in rows]
+        by_ref = {row.ref: row for row in decoded}
+        missing = [ref for ref in refs if ref not in by_ref]
+        if missing:
+            raise RuntimeError(f"failed to persist inferences: {missing}")
+        return [by_ref[ref] for ref in refs]
+
+    def list_inferences_page(
+        self, *, limit: int, offset: int
+    ) -> tuple[list[InferenceRow], int]:
+        with self._locked() as conn:
+            total = int(
+                conn.execute("SELECT COUNT(*) AS n FROM inferences").fetchone()["n"]
+            )
+            rows = conn.execute(
+                f"{_INFERENCE_SELECT} ORDER BY inf.created_at DESC, inf.ref DESC "
+                "LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+        return [_inference_row(row) for row in rows], total
+
     def list_inferences(self) -> list[InferenceRow]:
         with self._locked() as conn:
             rows = conn.execute(
-                """
-                SELECT
-                    inf.ref AS ref,
-                    img.ref AS image_ref,
-                    m.ref AS model_ref,
-                    inf.top_class_id AS top_class_id,
-                    inf.top_confidence AS top_confidence,
-                    inf.other_mass AS other_mass,
-                    inf.low_confidence AS low_confidence,
-                    inf.scores_json AS scores_json,
-                    inf.created_at AS created_at
-                FROM inferences AS inf
-                JOIN images AS img ON img.id = inf.image_id
-                JOIN models AS m ON m.id = inf.model_id
-                ORDER BY inf.created_at ASC, inf.ref ASC
-                """
+                f"{_INFERENCE_SELECT} ORDER BY inf.created_at ASC, inf.ref ASC"
             ).fetchall()
-        return [
-            InferenceRow(
-                ref=row["ref"],
-                image_ref=row["image_ref"],
-                model_ref=row["model_ref"],
-                top_class_id=row["top_class_id"],
-                top_confidence=float(row["top_confidence"]),
-                other_mass=(
-                    None if row["other_mass"] is None else float(row["other_mass"])
-                ),
-                low_confidence=bool(row["low_confidence"]),
-                scores=_decode_json(row["scores_json"]),
-                created_at=row["created_at"],
-            )
-            for row in rows
-        ]
+        return [_inference_row(row) for row in rows]
+
+
+_INFERENCE_SELECT = """
+SELECT
+    inf.ref AS ref,
+    img.ref AS image_ref,
+    m.ref AS model_ref,
+    inf.top_class_id AS top_class_id,
+    inf.top_confidence AS top_confidence,
+    inf.other_mass AS other_mass,
+    inf.low_confidence AS low_confidence,
+    inf.scores_json AS scores_json,
+    inf.created_at AS created_at
+FROM inferences AS inf
+JOIN images AS img ON img.id = inf.image_id
+JOIN models AS m ON m.id = inf.model_id
+"""
+
+
+def _inference_row(row: sqlite3.Row) -> InferenceRow:
+    return InferenceRow(
+        ref=row["ref"],
+        image_ref=row["image_ref"],
+        model_ref=row["model_ref"],
+        top_class_id=row["top_class_id"],
+        top_confidence=float(row["top_confidence"]),
+        other_mass=(None if row["other_mass"] is None else float(row["other_mass"])),
+        low_confidence=bool(row["low_confidence"]),
+        scores=_decode_json(row["scores_json"]),
+        created_at=row["created_at"],
+    )
 
 
 def _model_row(row: sqlite3.Row) -> ModelRow:

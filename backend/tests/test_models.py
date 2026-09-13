@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
+import time
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
@@ -23,7 +25,7 @@ from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
 from faunalab.domain.classes import CLASS_IDS
-from faunalab.domain.models import register_trained_model
+from faunalab.domain.models import delete_model, register_trained_model
 from faunalab.persist.store import DB_FILENAME, Store
 from faunalab.settings import Settings, get_settings
 
@@ -419,7 +421,7 @@ def test_delete_stays_retryable_if_artifact_removal_fails(
     def boom(_root: Path, _relative: str) -> None:
         raise OSError("permission denied")
 
-    monkeypatch.setattr("faunalab.domain.models.remove_tree_if_present", boom)
+    monkeypatch.setattr("faunalab.persist.store.remove_tree_if_present", boom)
     failed = assets_client.delete(f"/api/models/{trained.ref}")
     assert failed.status_code == 500
     assert assets_client.get(f"/api/models/{trained.ref}").status_code == 200
@@ -429,6 +431,63 @@ def test_delete_stays_retryable_if_artifact_removal_fails(
     assert deleted.status_code == 204
     assert assets_client.get(f"/api/models/{trained.ref}").status_code == 404
     assert not marker.exists()
+
+
+def test_delete_does_not_drop_artifacts_of_concurrently_activated_model(
+    assets_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Activate cannot slip in between artifact removal and the tombstone."""
+
+    store = _app_store(assets_client)
+    v0 = _version_zero(assets_client)["ref"]
+    trained = register_trained_model(
+        store, ref=str(uuid.uuid4()), created_at="2026-09-13T00:00:00Z"
+    )
+    marker = store.data_dir / "models" / "1" / "model.onnx"
+    marker.write_bytes(b"dummy-onnx")
+    assert assets_client.post(f"/api/models/{v0}/activate").status_code == 200
+
+    started = threading.Event()
+    proceed = threading.Event()
+    from faunalab.persist.files import remove_tree_if_present as real_remove
+
+    def slow_remove(root: Path, relative: str) -> None:
+        started.set()
+        assert proceed.wait(timeout=2.0)
+        real_remove(root, relative)
+
+    monkeypatch.setattr("faunalab.persist.store.remove_tree_if_present", slow_remove)
+
+    outcomes: dict[str, object] = {}
+
+    def do_delete() -> None:
+        try:
+            delete_model(store, trained.ref)
+            outcomes["delete"] = "ok"
+        except Exception as exc:
+            outcomes["delete"] = type(exc).__name__
+
+    def do_activate() -> None:
+        outcomes["activate"] = store.activate_model(trained.ref)
+
+    deleter = threading.Thread(target=do_delete)
+    deleter.start()
+    assert started.wait(timeout=2.0)
+    activator = threading.Thread(target=do_activate)
+    activator.start()
+    time.sleep(0.1)
+    proceed.set()
+    deleter.join(timeout=2.0)
+    activator.join(timeout=2.0)
+    assert not deleter.is_alive()
+    assert not activator.is_alive()
+    assert outcomes["delete"] == "ok"
+    assert outcomes["activate"] is None
+    assert assets_client.get(f"/api/models/{trained.ref}").status_code == 404
+    assert not marker.exists()
+    active = [item for item in _state(assets_client)["models"] if item["active"]]
+    assert len(active) == 1
+    assert active[0]["ref"] == v0
 
 
 def test_migrated_deleted_column_rejects_out_of_range(tmp_path: Path) -> None:

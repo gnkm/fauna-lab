@@ -376,9 +376,13 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 
 ### 7.2 推論（版 0）
 
-ONNX Runtime で `logits` を得る（HTTP 推論 API は F011。関数単位の照合は F010 で `baseline_expectations.json` に対して実施）。softmax → クラスマップ合算 → その他質量 `1 − Σ s(c)` → `Σ s(c) ≥ 1e-6` なら `s(c)/Σ s(c)`、未満なら全クラス 0.125 かつ低信頼。未収録クラス（`american_bulldog`、`havanese`）の s(c) は常に 0。補間・温度スケーリング・事前確率補正はしない。
+ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /api/inferences`（F011）。softmax → クラスマップ合算 → その他質量 `1 − Σ s(c)` → `Σ s(c) ≥ 1e-6` なら `s(c)/Σ s(c)`、未満なら全クラス 0.125 かつ低信頼。未収録クラス（`american_bulldog`、`havanese`）の s(c) は常に 0。補間・温度スケーリング・事前確率補正はしない。
 
-共通前処理は REQ-F-BASE-002 の 5 ステップ（`faunalab.ml.preprocess`）。学習・評価・推論で同一実装を使う。
+共通前処理は REQ-F-BASE-002 の 5 ステップ（`faunalab.ml.preprocess`）。学習・評価・推論で同一実装を使う。API プロセスは起動時に版 0 の ONNX セッションを載せ、PyTorch は import しない。
+
+新規ファイルは未割当・未ラベルで登録する。同一 SHA-256 が既にあれば既存画像を再利用する（I-INF-001）。1 要求の合計はファイルと `refs` を合わせて 20。有効モデルが無いときは 422 `no_active_model`。本 Issue の推論ランタイムは版 0 のみ。学習済モデルの ONNX 推論は F014。
+
+低信頼は最上位信頼度 < `FAUNALAB_CONFIDENCE_THRESHOLD`、その他質量 > `FAUNALAB_OTHER_MASS_THRESHOLD`、または一様 0.125 フォールバック。`other_mass` は版 0 で実数、学習済では `null`。
 
 ### 7.3 学習
 
@@ -575,7 +579,7 @@ VER-F-IMG-001 は偽装テキストと 10 MiB 超 JPEG でステータスが異�
 学習ジョブ（F014）はモデル版を自ら INSERT しない。成功時は `faunalab.domain.models.register_trained_model` を呼ぶ。この関数が版番号（1 から連番、`MAX(version)+1`、削除済も含めて再利用しない）、有効化規則（REQ-F-MDL-004: 有効が無い、または有効が版 0 のときだけ自動有効化）、成果物ディレクトリ `models/{version}/` を担う。版番号の決定・ディレクトリ作成・自動有効化・INSERT は同一ロック／トランザクションで行い、ディレクトリ作成に失敗したら行を残さない。指標は呼び出し側が渡さない限り `null`。試験分割が空ならそのまま成功（REQ-F-MDL-002）。空でなければ F014 が `model.onnx` を書いたあと `evaluate_model` を呼ぶ。空のときに `evaluate_model` を呼んではならない（REQ-F-MDL-009 は再評価を失敗させる）。
 
 **I-MDL-002 モデル削除は論理削除**
-`DELETE /api/models/{ref}` は行を残し `deleted=1` にする。版番号の UNIQUE が残るので再利用しない。`_state` と GET は `deleted=0` だけを出す。成果物ディレクトリを先に除去し、成功してから論理削除する。除去が失敗したらモデルは可視のままなので DELETE を再試行できる。`inferences.model_id` の FK は残るので推論履歴の `model_ref` は変わらない（REQ-F-MDL-007）。有効モデルと版 0 は 409 `model_not_deletable`。
+`DELETE /api/models/{ref}` は行を残し `deleted=1` にする。版番号の UNIQUE が残るので再利用しない。`_state` と GET は `deleted=0` だけを出す。成果物ディレクトリを先に除去し、成功してから論理削除する。除去が失敗したらモデルは可視のままなので DELETE を再試行できる。状態確認・成果物削除・論理削除は有効化と同じストアロックで一連の操作にする。この間に別リクエストが有効化しても、成果物だけ消えて有効行が残ることはない。`inferences.model_id` の FK は残るので推論履歴の `model_ref` は変わらない（REQ-F-MDL-007）。有効モデルと版 0 は 409 `model_not_deletable`。
 
 **I-MDL-003 再評価の対象**
 `POST /api/models/{ref}/evaluate` は現在 `split=test` かつ確定ラベルがある画像だけを使う。0 件なら 422 `empty_test_split`。版 0 は配布 ONNX + 畳み込み。学習済は `models/{version}/model.onnx` の 8 クラス logits の argmax（同率は `display_order` が小さい方）。
@@ -591,6 +595,12 @@ SRS は圧縮後 10 MiB 以外の寸法上限を定めない。展開爆弾を 5
 
 **I-BASE-001 API 前処理は torchvision 互換の Pillow + NumPy**
 ARCHITECTURE は出典合わせのため torchvision を挙げる。REQ-PERF-006 により API プロセスは PyTorch を載せない。共通前処理は torchvision の ImageNet 評価手順（短辺 256・bilinear、中央 224、`[0,1]`、ImageNet 平均・分散）を Pillow / NumPy で実装し、学習ワーカ（F014）で torchvision を使う場合もこの関数を共有する。VER-F-BASE-001 の期待値差 0.02 以内で適合を確認する。
+
+**I-INF-001 推論の新規ファイルが既登録なら再利用する**
+REQ-F-INF-006 は履歴を残すために新規画像を登録することを求める。同一 SHA-256 が既にある場合、409 にせず既存画像へ推論履歴を付ける。新規として登録するのは未登録の内容だけである。
+
+**I-INF-002 推論は部分成功にしない**
+画像アップロードは件別結果の部分成功（I-API-001）だが、推論は 1 要求をひとまとまりとする。媒体型不正・サイズ超過・対象不在・件数超過は操作全体を失敗にする。
 
 **I-USE-001 犬種知識を前提にしない**
 人手の 1 枚ラベルを必須手順にしない。主経路はサンプル投入 → 候補生成と採用 → 学習 → 推論とする（REQ-USE-001）。

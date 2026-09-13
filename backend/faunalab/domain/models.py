@@ -8,7 +8,7 @@ from pathlib import Path
 from faunalab.ml.baseline import BaselineInspection
 from faunalab.ml.metrics import Metrics, compute_metrics
 from faunalab.ml.predict import load_onnx_session, predict_class_ids
-from faunalab.persist.files import remove_tree_if_present, resolve_under
+from faunalab.persist.files import resolve_under
 from faunalab.persist.store import ImageRow, ModelRow, Store
 
 TRAINED_ONNX_NAME = "model.onnx"
@@ -81,20 +81,16 @@ def delete_model(store: Store, ref: str) -> None:
     """Remove artifacts; keep a tombstone so version numbers are not reused.
 
     Inference rows keep `model_id` (REQ-F-MDL-007). The model disappears
-    from `_state` and GET.
+    from `_state` and GET. Check, artifact removal, and the tombstone share
+    the store lock with activate so an in-flight activate cannot leave an
+    active row without files.
     """
 
-    existing = store.get_model(ref)
-    if existing is None:
+    outcome = store.purge_trained_model(ref)
+    if outcome == "not_found":
         raise ModelNotFoundError(ref)
-    if existing.builtin or existing.active:
+    if outcome == "not_deletable":
         raise ModelNotDeletableError(ref)
-    artifact_dir = existing.artifact_dir
-    if artifact_dir:
-        remove_tree_if_present(store.data_dir, artifact_dir)
-    deleted = store.mark_model_deleted(ref)
-    if deleted is None:
-        raise ModelNotFoundError(ref)
 
 
 def evaluate_model(
