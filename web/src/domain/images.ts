@@ -80,3 +80,22 @@ export function withLabel(
     split: label === null ? "unassigned" : image.split,
   };
 }
+
+export function matchesFilters(
+  image: ImageItem,
+  filters: ImageFilters,
+): boolean {
+  if (filters.labeled === "yes" && image.label === null) {
+    return false;
+  }
+  if (filters.labeled === "no" && image.label !== null) {
+    return false;
+  }
+  if (filters.classId !== "" && image.label?.class_id !== filters.classId) {
+    return false;
+  }
+  if (filters.split !== "" && image.split !== filters.split) {
+    return false;
+  }
+  return true;
+}

@@ -60,12 +60,16 @@ export function SplitsPage() {
     const valRatio = Number(val);
     const testRatio = Number(test);
     const seedValue = Number(seed);
+    const ratios = [trainRatio, valRatio, testRatio];
     if (
-      ![trainRatio, valRatio, testRatio, seedValue].every((value) =>
-        Number.isFinite(value),
-      )
+      !ratios.every((value) => Number.isFinite(value)) ||
+      !Number.isFinite(seedValue)
     ) {
       setError("比率とシードは数値で指定してください。");
+      return;
+    }
+    if (!ratios.every((value) => value > 0 && value < 1)) {
+      setError("各比率は 0 より大きく 1 より小さくしてください。");
       return;
     }
     const sum = trainRatio + valRatio + testRatio;
@@ -193,8 +197,8 @@ export function SplitsPage() {
               訓練比率
               <input
                 type="number"
-                min={0}
-                max={1}
+                min={0.01}
+                max={0.99}
                 step="0.01"
                 value={train}
                 onChange={(event) => setTrain(event.target.value)}
@@ -206,8 +210,8 @@ export function SplitsPage() {
               検証比率
               <input
                 type="number"
-                min={0}
-                max={1}
+                min={0.01}
+                max={0.99}
                 step="0.01"
                 value={val}
                 onChange={(event) => setVal(event.target.value)}
@@ -219,8 +223,8 @@ export function SplitsPage() {
               試験比率
               <input
                 type="number"
-                min={0}
-                max={1}
+                min={0.01}
+                max={0.99}
                 step="0.01"
                 value={test}
                 onChange={(event) => setTest(event.target.value)}

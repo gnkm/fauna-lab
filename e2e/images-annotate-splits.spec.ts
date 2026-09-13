@@ -89,14 +89,18 @@ test("アップロードからラベルと分割まで UI で完了し _state �
   await page.getByTestId("class-select").selectOption("samoyed");
   await page.getByTestId("assign-one").click();
   await expect(page.getByText("確定ラベルを付けました。")).toBeVisible();
-  await expect(cards.nth(0).getByText("確定: サモエド")).toBeVisible();
+  await expect(cards).toHaveCount(1);
 
-  await cards.nth(0).getByRole("checkbox").uncheck();
-  await cards.nth(1).getByRole("checkbox").check();
+  await cards.nth(0).getByRole("checkbox").check();
   await page.getByTestId("class-select").selectOption("chihuahua");
   await page.getByTestId("assign-bulk").click();
   await expect(page.getByText("確定ラベルを 1 件付けました。")).toBeVisible();
-  await expect(cards.nth(1).getByText("確定: チワワ")).toBeVisible();
+  await expect(cards).toHaveCount(0);
+
+  await page.getByTestId("filter-labeled").selectOption("all");
+  await expect(cards).toHaveCount(2);
+  await expect(page.getByText("確定: サモエド")).toBeVisible();
+  await expect(page.getByText("確定: チワワ")).toBeVisible();
 
   await page
     .getByRole("navigation", { name: "メイン" })
@@ -131,6 +135,37 @@ test("アップロードからラベルと分割まで UI で完了し _state �
   expect(state.images.every((image) => image.split !== "unassigned")).toBe(
     true,
   );
+});
+
+test("分割の比率 1/0/0 は送信前に拒否する", async ({ page, request }) => {
+  await page.goto("/images");
+  await page.getByTestId("upload-input").setInputFiles([FIXTURE_JPEG_A]);
+  await expect(page.getByTestId("image-total")).toHaveText("1 / 1 件");
+  await page
+    .getByRole("navigation", { name: "メイン" })
+    .getByRole("link", { name: "アノテーション", exact: true })
+    .click();
+  await page.getByTestId("class-select").selectOption("samoyed");
+  await page.getByTestId("assign-one").click();
+  await expect(page.getByText("確定ラベルを付けました。")).toBeVisible();
+
+  await page
+    .getByRole("navigation", { name: "メイン" })
+    .getByRole("link", { name: "分割", exact: true })
+    .click();
+  await page.getByTestId("split-train").fill("1");
+  await page.getByTestId("split-val").fill("0");
+  await page.getByTestId("split-test").fill("0");
+  const trainValid = await page
+    .getByTestId("split-train")
+    .evaluate((element: HTMLInputElement) => element.validity.valid);
+  expect(trainValid).toBe(false);
+  await page.getByTestId("split-run").click();
+  await expect(page.getByTestId("split-notice")).toHaveCount(0);
+  const stats = (await (await request.get("/api/stats")).json()) as {
+    per_split: { unassigned: number };
+  };
+  expect(stats.per_split.unassigned).toBe(1);
 });
 
 test("画像削除は確認ダイアログを出し、キャンセルできる", async ({ page }) => {

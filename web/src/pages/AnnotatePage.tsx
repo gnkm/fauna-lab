@@ -14,7 +14,6 @@ import {
   EMPTY_FILTERS,
   type ImageFilters,
   type ImageItem,
-  withLabel,
 } from "../domain/images";
 import { Link } from "../router/Link";
 import { useRouter } from "../router/Router";
@@ -69,17 +68,13 @@ export function AnnotatePage() {
   const focused = images[focusIndex] ?? null;
   const selectedRefs = useMemo(() => Array.from(selected), [selected]);
 
-  const applyLocal = useCallback(
-    (refs: string[], label: ImageItem["label"]) => {
-      const refSet = new Set(refs);
-      setImages((current) =>
-        current.map((item) =>
-          refSet.has(item.ref) ? withLabel(item, label) : item,
-        ),
-      );
-    },
-    [],
-  );
+  const reloadList = useCallback(async () => {
+    const page = await fetchImages(filters, PAGE_SIZE, 0);
+    setImages(page.items);
+    setTotal(page.total);
+    setSelected(new Set());
+    setFocusIndex(0);
+  }, [filters]);
 
   const onAssignOne = useCallback(
     (ref: string, nextClass: ClassId) => {
@@ -88,8 +83,8 @@ export function AnnotatePage() {
       }
       setPending(true);
       putImageLabel(ref, nextClass)
-        .then((label) => {
-          applyLocal([ref], label);
+        .then(async () => {
+          await reloadList();
           setNotice("確定ラベルを付けました。");
           setError(null);
         })
@@ -100,7 +95,7 @@ export function AnnotatePage() {
           setPending(false);
         });
     },
-    [applyLocal, pending],
+    [pending, reloadList],
   );
 
   const onBulk = () => {
@@ -109,10 +104,9 @@ export function AnnotatePage() {
     }
     setPending(true);
     bulkPutLabels(selectedRefs, classId)
-      .then((count) => {
-        applyLocal(selectedRefs, { class_id: classId, source: "human" });
+      .then(async (count) => {
+        await reloadList();
         setNotice(`確定ラベルを ${String(count)} 件付けました。`);
-        setSelected(new Set());
         setError(null);
       })
       .catch((reason: unknown) => {
@@ -128,15 +122,33 @@ export function AnnotatePage() {
       return;
     }
     setPending(true);
-    Promise.all(selectedRefs.map((ref) => deleteImageLabel(ref)))
-      .then(() => {
-        applyLocal(selectedRefs, null);
+    Promise.allSettled(
+      selectedRefs.map(async (ref) => {
+        await deleteImageLabel(ref);
+        return ref;
+      }),
+    )
+      .then(async (results) => {
+        const succeeded = results.filter(
+          (result) => result.status === "fulfilled",
+        ).length;
+        const failedCount = results.length - succeeded;
+        await reloadList();
+        if (failedCount > 0) {
+          setError(
+            `${String(failedCount)} 件のラベル解除に失敗しました。一覧をサーバの状態に合わせました。`,
+          );
+          if (succeeded > 0) {
+            setNotice(`確定ラベルを ${String(succeeded)} 件解除しました。`);
+          }
+          return;
+        }
         setNotice("選択したラベルを解除しました。");
-        setSelected(new Set());
         setError(null);
       })
       .catch((reason: unknown) => {
         setError(errorMessage(reason));
+        return reloadList();
       })
       .finally(() => {
         setPending(false);
