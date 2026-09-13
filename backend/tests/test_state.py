@@ -9,6 +9,7 @@ Verification mapping:
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -114,20 +115,29 @@ def test_classes_survive_restart(settings: Settings) -> None:
 
 
 def test_get_state_does_not_write(settings: Settings) -> None:
-    """GET /api/_state は DB / ファイルへ書き込まない。"""
+    """GET /api/_state は DB の行・版・スキーマを変えない。"""
+    db_path = settings.data_dir / DB_FILENAME
     with TestClient(create_app(settings)) as client:
         client.get("/api/_state")
-        before = _file_fingerprint(settings.data_dir)
+        before = _logical_db_snapshot(db_path)
         client.get("/api/_state")
-        after = _file_fingerprint(settings.data_dir)
-    # WAL/SHM のサイズ変動は読み取りでも起きうるので、パス集合だけ見る。
-    assert before.keys() == after.keys()
+        after = _logical_db_snapshot(db_path)
+    assert after == before
 
 
 def test_generated_files_stay_under_data_dir(
     settings: Settings, tmp_path: Path
 ) -> None:
     """REQ-DATA-011 / REQ-DATA-012: 生成物はデータディレクトリ配下のみ。"""
+    repo = Path(__file__).resolve().parents[2]
+    watched = [
+        repo / DB_FILENAME,
+        repo / "data" / DB_FILENAME,
+        Path.cwd() / DB_FILENAME,
+        Path.cwd() / "data" / DB_FILENAME,
+        Path("/var/lib/faunalab") / DB_FILENAME,
+    ]
+    existed = {path: path.exists() for path in watched}
     with TestClient(create_app(settings)) as client:
         client.get("/api/_state")
     created_files = [p for p in tmp_path.rglob("*") if p.is_file()]
@@ -138,6 +148,11 @@ def test_generated_files_stay_under_data_dir(
     for name in DATA_SUBDIRS:
         assert (settings.data_dir / name).is_dir()
     assert not (tmp_path / "assets").exists()
+    target = (settings.data_dir / DB_FILENAME).resolve()
+    for path in watched:
+        if path.resolve() == target:
+            continue
+        assert path.exists() == existed[path], f"unexpected write at {path}"
 
 
 def test_missing_assets_still_starts(settings: Settings) -> None:
@@ -293,9 +308,34 @@ def test_observation_mappers_omit_internal_columns() -> None:
     assert utc_now_z(aware) == "2026-09-12T03:04:05Z"
 
 
-def _file_fingerprint(root: Path) -> dict[str, int]:
-    return {
-        str(path.relative_to(root)): path.stat().st_size
-        for path in sorted(root.rglob("*"))
-        if path.is_file() and not path.name.endswith(("-wal", "-shm"))
-    }
+_TABLE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _logical_db_snapshot(db_path: Path) -> dict[str, Any]:
+    """Compare row contents, not WAL/SHM file names or sizes."""
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("PRAGMA query_only = ON")
+        names = [
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name NOT LIKE 'sqlite_%' "
+                "ORDER BY name"
+            )
+        ]
+        tables: dict[str, list[tuple[Any, ...]]] = {}
+        for name in names:
+            if _TABLE_NAME.match(name) is None:
+                raise AssertionError(f"unexpected table name {name!r}")
+            tables[name] = conn.execute(f'SELECT * FROM "{name}"').fetchall()
+        return {
+            "user_version": conn.execute("PRAGMA user_version").fetchone(),
+            "data_version": conn.execute("PRAGMA data_version").fetchone(),
+            "schema": conn.execute(
+                "SELECT type, name, sql FROM sqlite_master ORDER BY name"
+            ).fetchall(),
+            "tables": tables,
+        }
+    finally:
+        conn.close()
