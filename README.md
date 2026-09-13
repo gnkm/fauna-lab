@@ -65,7 +65,7 @@ uv sync --directory backend --frozen
 | 目的 | コマンド |
 | --- | --- |
 | 試験（単一） | `pnpm test` |
-| UI 受入（Playwright） | `pnpm test:e2e`（先に `pnpm --filter web build`。ブラウザはセットアップで取得） |
+| UI 受入（Playwright） | `pnpm test:e2e`（先に `pnpm --filter web build`。ブラウザは `pnpm exec playwright install chromium`。システムの Google Chrome を使う場合は `PW_CHANNEL=chrome`） |
 | 静的解析（単一） | `pnpm lint` |
 
 `pnpm test` は `uv run --directory backend pytest` である。カバレッジは計測するが、70 % 未満で落とす enforce は F018/F019（未実装コードで落とさないため）。

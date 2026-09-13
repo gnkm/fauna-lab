@@ -30,6 +30,7 @@ def test_spa_unknown_path_returns_index(tmp_path: Path) -> None:
         detail = client.get("/images/abc")
         script = client.get("/assets/app.js")
         stats = client.get("/api/stats")
+        missing_api = client.get("/api/does-not-exist")
     assert index.status_code == 200
     assert "FaunaLab" in index.text
     assert nested.status_code == 200
@@ -40,3 +41,6 @@ def test_spa_unknown_path_returns_index(tmp_path: Path) -> None:
     assert "console.log" in script.text
     assert stats.status_code == 200
     assert stats.json()["image_count"] == 0
+    assert missing_api.status_code == 404
+    assert "text/html" not in missing_api.headers.get("content-type", "")
+

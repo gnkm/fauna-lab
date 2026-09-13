@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const useSystemChrome = process.env.CI !== "true";
+const useSystemChrome = process.env.PW_CHANNEL === "chrome";
 
 export default defineConfig({
   testDir: "./e2e",
