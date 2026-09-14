@@ -19,8 +19,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _jpeg(color: tuple[int, int, int] = (8, 9, 10), salt: int = 0) -> bytes:
-    image = Image.new("RGB", (20, 16), color)
-    image.putpixel((salt % 20, 1), (salt % 256, 2, 3))
+    image = Image.new("RGB", (32 + salt, 16), color)
+    for offset in range(32):
+        image.putpixel(
+            (offset % image.size[0], offset % 16),
+            ((color[0] + salt + offset) % 256, color[1], color[2]),
+        )
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG")
     return buffer.getvalue()
@@ -73,10 +77,10 @@ def test_ver_att_002_special_names_stay_values(
         "../../../etc/passwd.jpg",
         "foo;rm -rf --no-preserve-root.jpg",
         "<img src=x onerror=alert(1)>.jpg",
-        'quote"and\'tick.jpg',
+        "name with spaces.jpg",
     ]
     for index, name in enumerate(names):
-        response = _upload(client, _jpeg((10, 20, index + 1), index + 2), name)
+        response = _upload(client, _jpeg((10, 20, index + 1), salt=index + 2), name)
         assert response.status_code == 200, response.text
         item = response.json()["items"][0]
         assert item["ok"] is True

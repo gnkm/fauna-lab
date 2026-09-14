@@ -7,12 +7,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
 from faunalab.domain.images import MAX_IMAGE_BYTES
-from faunalab.settings import Settings
+from faunalab.settings import Settings, get_settings
 from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -80,72 +79,71 @@ def test_ver_api_001_openapi_paths_match_implementation(client: TestClient) -> N
     assert extra == set(), f"implementation /api paths not in openapi.yaml: {extra}"
 
 
-def test_ver_api_001_seven_statuses_are_distinct(client: TestClient) -> None:
+def test_ver_api_001_seven_statuses_are_distinct(settings: Settings) -> None:
     """VER-API-001: REQ-API-003 の 7 状況が異なるステータスで返る。"""
 
-    bad_json = client.get("/api/images", params={"limit": 0})
-    missing = client.get(f"/api/images/{MISSING_REF}")
-    payload = _jpeg(color=(1, 2, 3))
-    first = client.post(
-        "/api/images",
-        files=[("files", ("a.jpg", payload, "image/jpeg"))],
-    )
-    assert first.status_code == 200
-    duplicate = client.post(
-        "/api/images",
-        files=[("files", ("b.jpg", payload, "image/jpeg"))],
-    )
-    no_model = client.post(
-        "/api/inferences",
-        files=[("files", ("c.jpg", _jpeg(color=(4, 5, 6)), "image/jpeg"))],
-    )
-    fake = client.post(
-        "/api/images",
-        files=[("files", ("d.jpg", b"not-an-image", "image/jpeg"))],
-    )
-    oversize = client.post(
-        "/api/images",
-        files=[("files", ("e.jpg", _oversize_jpeg(), "image/jpeg"))],
-    )
-
-    app = client.app
-    assert isinstance(app, FastAPI)
+    app = create_app(settings)
 
     @app.get("/__boom")
     def boom() -> None:
         raise RuntimeError("secret-path-/tmp/faunalab-boom")
 
-    client.raise_server_exceptions = False
-    internal = client.get("/__boom")
+    with TestClient(app, raise_server_exceptions=False) as client:
+        bad_json = client.get("/api/images", params={"limit": 0})
+        missing = client.get(f"/api/images/{MISSING_REF}")
+        payload = _jpeg(color=(1, 2, 3))
+        first = client.post(
+            "/api/images",
+            files=[("files", ("a.jpg", payload, "image/jpeg"))],
+        )
+        assert first.status_code == 200
+        duplicate = client.post(
+            "/api/images",
+            files=[("files", ("b.jpg", payload, "image/jpeg"))],
+        )
+        no_model = client.post(
+            "/api/inferences",
+            files=[("files", ("c.jpg", _jpeg(color=(4, 5, 6)), "image/jpeg"))],
+        )
+        fake = client.post(
+            "/api/images",
+            files=[("files", ("d.jpg", b"not-an-image", "image/jpeg"))],
+        )
+        oversize = client.post(
+            "/api/images",
+            files=[("files", ("e.jpg", _oversize_jpeg(), "image/jpeg"))],
+        )
+        internal = client.get("/__boom")
 
-    by_status = {
-        400: bad_json,
-        404: missing,
-        409: duplicate,
-        422: no_model,
-        415: fake,
-        413: oversize,
-        500: internal,
-    }
-    assert set(by_status) == {400, 404, 409, 413, 415, 422, 500}
-    codes = {
-        400: "validation_error",
-        404: "image_not_found",
-        409: "image_duplicate",
-        422: "no_active_model",
-        415: "unsupported_media_type",
-        413: "payload_too_large",
-        500: "internal_error",
-    }
-    for status, response in by_status.items():
-        assert response.status_code == status, response.text
-        _problem_has_no_leaks(response)
-        body = response.json()
-        assert body["status"] == status
-        assert body["code"] == codes[status]
-        assert body["type"] == f"urn:faunalab:error:{codes[status]}"
-    alive = client.get("/api/_state")
-    assert alive.status_code == 200
+        by_status = {
+            400: bad_json,
+            404: missing,
+            409: duplicate,
+            422: no_model,
+            415: fake,
+            413: oversize,
+            500: internal,
+        }
+        assert set(by_status) == {400, 404, 409, 413, 415, 422, 500}
+        codes = {
+            400: "validation_error",
+            404: "image_not_found",
+            409: "image_duplicate",
+            422: "no_active_model",
+            415: "unsupported_media_type",
+            413: "payload_too_large",
+            500: "internal_error",
+        }
+        for status, response in by_status.items():
+            assert response.status_code == status, response.text
+            _problem_has_no_leaks(response)
+            body = response.json()
+            assert body["status"] == status
+            assert body["code"] == codes[status]
+            assert body["type"] == f"urn:faunalab:error:{codes[status]}"
+        alive = client.get("/api/_state")
+        assert alive.status_code == 200
+    get_settings.cache_clear()
 
 
 def test_ver_api_001_error_bodies_omit_paths(
