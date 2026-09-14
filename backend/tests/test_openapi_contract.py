@@ -270,3 +270,21 @@ def test_state_uses_observation_image_schema() -> None:
         "items"
     ]["items"]["$ref"]
     assert page_items.endswith("Image")
+
+
+def test_state_uses_observation_model_schema() -> None:
+    yaml = pytest.importorskip("yaml")
+    doc = yaml.safe_load(OPENAPI_PATH.read_text(encoding="utf-8"))
+    required = doc["components"]["schemas"]["ObservationModel"]["required"]
+    assert required == ["ref", "version", "builtin", "active", "metrics"]
+    assert "created_at" not in required
+    extra = doc["components"]["schemas"]["Model"]["allOf"][1]["required"]
+    assert "created_at" in extra
+    state_items = doc["components"]["schemas"]["ObservationState"]["properties"][
+        "models"
+    ]["items"]["$ref"]
+    assert state_items.endswith("ObservationModel")
+    page_items = doc["components"]["schemas"]["ModelPage"]["allOf"][1]["properties"][
+        "items"
+    ]["items"]["$ref"]
+    assert page_items.endswith("Model")

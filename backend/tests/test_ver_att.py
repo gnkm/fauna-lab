@@ -122,7 +122,17 @@ def test_ver_att_003_readme_lint_and_single_command() -> None:
     assert "起動" in readme
     assert "試験" in readme
     assert "サンプル" in readme
+    assert "設計判断" in readme
+    assert "Podman" in readme
+    assert "podman compose build" in readme
+    assert "podman compose up --pull never" in readme
+    assert "/api/_state" in readme
     assert "ARCHITECTURE.md" in readme or "DESIGN.md" in readme
+    compose = (REPO_ROOT / "compose.yaml").read_text(encoding="utf-8")
+    assert "podman compose build" in compose
+    assert "podman compose up --pull never" in compose
+    assert "podman compose build" in readme
+    assert "podman compose up --pull never" in readme
     assert (REPO_ROOT / "biome.json").is_file()
     pyproject = (REPO_ROOT / "backend" / "pyproject.toml").read_text(encoding="utf-8")
     assert "fail_under" in pyproject
