@@ -54,6 +54,12 @@ docker compose build
 docker compose up --pull never
 ```
 
+起動後の観測:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/_state
+```
+
 試験・静的解析（ホスト上。外部ネットワーク不要）:
 
 ```bash

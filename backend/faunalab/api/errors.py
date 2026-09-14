@@ -21,6 +21,7 @@ ERROR_STATUS: dict[str, int] = {
     "image_not_found": 404,
     "model_not_found": 404,
     "job_not_found": 404,
+    "inference_not_found": 404,
     "suggestion_not_found": 404,
     "image_duplicate": 409,
     "model_not_deletable": 409,
