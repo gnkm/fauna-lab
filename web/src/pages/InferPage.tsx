@@ -38,12 +38,12 @@ function missingModelHint(stats: Stats): string {
   return "配布資産が無い、または学習済モデルがまだ無い可能性があります。";
 }
 
-function ResultList({ items }: { items: Inference[] }) {
+function ResultList({ items, testId }: { items: Inference[]; testId: string }) {
   if (items.length === 0) {
     return null;
   }
   return (
-    <ol className="infer-results" data-testid="infer-results">
+    <ol className="infer-results" data-testid={testId}>
       {items.map((item) => {
         const top3 = topScores(item, 3);
         return (
@@ -264,7 +264,7 @@ export function InferPage() {
         {latest.length === 0 ? (
           <p className="muted">この画面でまだ推論していません。</p>
         ) : (
-          <ResultList items={latest} />
+          <ResultList items={latest} testId="infer-results" />
         )}
       </section>
 
@@ -277,7 +277,7 @@ export function InferPage() {
             </p>
           </EmptyState>
         ) : (
-          <ResultList items={history} />
+          <ResultList items={history} testId="infer-history" />
         )}
       </section>
     </article>
