@@ -6,17 +6,24 @@ import json
 import logging
 import sqlite3
 import threading
+import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
 from faunalab.domain.classes import CLASS_IDS, SPLIT_IDS, SYSTEM_CLASSES
-from faunalab.persist.files import ensure_dir, remove_tree_if_present
+from faunalab.persist.files import (
+    ensure_dir,
+    remove_tree_if_present,
+    write_bytes,
+)
 from faunalab.persist.schema import SCHEMA_SQL, SCHEMA_VERSION
 
 IN_QUERY_CHUNK = 500
+TRAINED_ONNX_NAME = "model.onnx"
 
 LOGGER = logging.getLogger("faunalab.persist")
 
@@ -100,6 +107,8 @@ class JobRow:
     total_epochs: int
     model_ref: str | None
     created_at: str
+    params: Any = None
+    failed_reason: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,6 +203,14 @@ class Store:
                 elif version < SCHEMA_VERSION:
                     conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
                 self._seed_classes(conn)
+                self._ensure_job_cancel_column(conn)
+                self._recover_interrupted_jobs(conn)
+
+    def fail_interrupted_jobs(self) -> None:
+        """Mark leftover RUNNING jobs FAILED. Safe for a respawned worker."""
+
+        with self._locked() as conn:
+            with conn:
                 self._recover_interrupted_jobs(conn)
 
     def close(self) -> None:
@@ -201,6 +218,22 @@ class Store:
             if self._conn is not None:
                 self._conn.close()
                 self._conn = None
+
+    def open_existing(self) -> None:
+        """Connect for the worker. Do not seed or recover (API already did)."""
+
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        with self._lock:
+            conn = sqlite3.connect(
+                self.db_path,
+                check_same_thread=False,
+                timeout=30.0,
+            )
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute("PRAGMA busy_timeout = 5000")
+            self._conn = conn
 
     @contextmanager
     def _locked(self) -> Iterator[sqlite3.Connection]:
@@ -224,15 +257,27 @@ class Store:
 
     def _recover_interrupted_jobs(self, conn: sqlite3.Connection) -> None:
         # REQ-F-TRN-014 / DESIGN 5.5: 起動時に残存 RUNNING を FAILED へ。
+        rows = conn.execute("SELECT ref FROM jobs WHERE status = 'RUNNING'").fetchall()
         conn.execute(
             """
             UPDATE jobs
             SET status = 'FAILED',
                 failed_reason = 'プロセス中断',
-                finished_at = datetime('now')
+                finished_at = ?
             WHERE status = 'RUNNING'
-            """
+            """,
+            (_utc_now_z(),),
         )
+        for row in rows:
+            remove_tree_if_present(self.data_dir, f"jobs/{row['ref']}/work")
+
+    def _ensure_job_cancel_column(self, conn: sqlite3.Connection) -> None:
+        columns = {str(row[1]) for row in conn.execute("PRAGMA table_info(jobs)")}
+        if "cancel_requested" not in columns:
+            conn.execute(
+                "ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL "
+                "DEFAULT 0 CHECK (cancel_requested IN (0, 1))"
+            )
 
     def _ensure_model_deleted_column(self, conn: sqlite3.Connection) -> None:
         columns = {str(row[1]) for row in conn.execute("PRAGMA table_info(models)")}
@@ -559,23 +604,394 @@ class Store:
                     j.current_epoch AS current_epoch,
                     j.total_epochs AS total_epochs,
                     m.ref AS model_ref,
-                    j.created_at AS created_at
+                    j.created_at AS created_at,
+                    j.params_json AS params_json,
+                    j.failed_reason AS failed_reason
                 FROM jobs AS j
                 LEFT JOIN models AS m ON m.id = j.model_id
                 ORDER BY j.created_at ASC, j.ref ASC
                 """
             ).fetchall()
-        return [
-            JobRow(
-                ref=row["ref"],
-                status=row["status"],
-                current_epoch=int(row["current_epoch"]),
-                total_epochs=int(row["total_epochs"]),
-                model_ref=row["model_ref"],
-                created_at=row["created_at"],
+        return [_job_row(row) for row in rows]
+
+    def list_jobs_page(self, *, limit: int, offset: int) -> tuple[list[JobRow], int]:
+        with self._locked() as conn:
+            total = int(conn.execute("SELECT COUNT(*) AS n FROM jobs").fetchone()["n"])
+            query = (
+                f"{_JOB_SELECT} ORDER BY j.created_at DESC, j.ref DESC LIMIT ? OFFSET ?"
             )
+            rows = conn.execute(query, (limit, offset)).fetchall()
+        return [_job_row(row) for row in rows], total
+
+    def get_job(self, ref: str) -> JobRow | None:
+        with self._locked() as conn:
+            row = conn.execute(f"{_JOB_SELECT} WHERE j.ref = ?", (ref,)).fetchone()
+        return None if row is None else _job_row(row)
+
+    def insert_job(
+        self,
+        *,
+        ref: str,
+        total_epochs: int,
+        params_json: str,
+        created_at: str,
+    ) -> None:
+        with self._locked() as conn:
+            with conn:
+                conn.execute(
+                    """
+                    INSERT INTO jobs (
+                        ref, status, current_epoch, total_epochs,
+                        params_json, created_at
+                    )
+                    VALUES (?, 'QUEUED', 0, ?, ?, ?)
+                    """,
+                    (ref, total_epochs, params_json, created_at),
+                )
+
+    def labeled_split_counts(self) -> dict[str, int]:
+        with self._locked() as conn:
+            train_n = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(*) AS n
+                    FROM images AS i
+                    JOIN labels AS l ON l.image_id = i.id
+                    WHERE i.split = 'train'
+                    """
+                ).fetchone()["n"]
+            )
+            val_n = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(*) AS n
+                    FROM images AS i
+                    JOIN labels AS l ON l.image_id = i.id
+                    WHERE i.split = 'val'
+                    """
+                ).fetchone()["n"]
+            )
+            train_classes = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(DISTINCT l.class_id) AS n
+                    FROM images AS i
+                    JOIN labels AS l ON l.image_id = i.id
+                    WHERE i.split = 'train'
+                    """
+                ).fetchone()["n"]
+            )
+        return {
+            "train": train_n,
+            "val": val_n,
+            "train_classes": train_classes,
+        }
+
+    def list_labeled_split(self, split: str) -> list[ImageRow]:
+        with self._locked() as conn:
+            rows = conn.execute(
+                f"{_IMAGE_SELECT} WHERE i.split = ? AND l.class_id IS NOT NULL "
+                "ORDER BY i.created_at ASC, i.ref ASC",
+                (split,),
+            ).fetchall()
+        return [_image_row(row) for row in rows]
+
+    def claim_next_queued(self) -> JobRow | None:
+        started = _utc_now_z()
+        claimed_ref: str | None = None
+        with self._locked() as conn:
+            with conn:
+                running = conn.execute(
+                    "SELECT 1 AS n FROM jobs WHERE status = 'RUNNING' LIMIT 1"
+                ).fetchone()
+                if running is not None:
+                    return None
+                queued = conn.execute(
+                    """
+                    SELECT ref FROM jobs
+                    WHERE status = 'QUEUED'
+                    ORDER BY created_at ASC, ref ASC
+                    LIMIT 1
+                    """
+                ).fetchone()
+                if queued is None:
+                    return None
+                claimed_ref = str(queued["ref"])
+                try:
+                    conn.execute(
+                        """
+                        UPDATE jobs
+                        SET status = 'RUNNING', started_at = ?
+                        WHERE ref = ? AND status = 'QUEUED'
+                        """,
+                        (started, claimed_ref),
+                    )
+                except sqlite3.IntegrityError:
+                    return None
+        if claimed_ref is None:
+            return None
+        return self.get_job(claimed_ref)
+
+    def request_cancel(
+        self, ref: str
+    ) -> Literal["canceled", "requested", "not_cancelable", "not_found"]:
+        now = _utc_now_z()
+        with self._locked() as conn:
+            with conn:
+                row = conn.execute(
+                    "SELECT status FROM jobs WHERE ref = ?",
+                    (ref,),
+                ).fetchone()
+                if row is None:
+                    return "not_found"
+                status = str(row["status"])
+                if status == "QUEUED":
+                    conn.execute(
+                        """
+                        UPDATE jobs
+                        SET status = 'CANCELED',
+                            cancel_requested = 1,
+                            finished_at = ?
+                        WHERE ref = ? AND status = 'QUEUED'
+                        """,
+                        (now, ref),
+                    )
+                    return "canceled"
+                if status == "RUNNING":
+                    conn.execute(
+                        """
+                        UPDATE jobs
+                        SET cancel_requested = 1
+                        WHERE ref = ? AND status = 'RUNNING'
+                        """,
+                        (ref,),
+                    )
+                    return "requested"
+                return "not_cancelable"
+
+    def is_cancel_requested(self, ref: str) -> bool:
+        with self._locked() as conn:
+            row = conn.execute(
+                "SELECT cancel_requested FROM jobs WHERE ref = ?",
+                (ref,),
+            ).fetchone()
+        return row is not None and int(row["cancel_requested"]) == 1
+
+    def mark_canceled(self, ref: str) -> None:
+        now = _utc_now_z()
+        with self._locked() as conn:
+            with conn:
+                conn.execute(
+                    """
+                    UPDATE jobs
+                    SET status = 'CANCELED', finished_at = ?
+                    WHERE ref = ? AND status IN ('QUEUED', 'RUNNING')
+                    """,
+                    (now, ref),
+                )
+
+    def fail_job(self, ref: str, reason: str) -> None:
+        now = _utc_now_z()
+        with self._locked() as conn:
+            with conn:
+                conn.execute(
+                    """
+                    UPDATE jobs
+                    SET status = 'FAILED',
+                        failed_reason = ?,
+                        finished_at = ?
+                    WHERE ref = ? AND status = 'RUNNING'
+                    """,
+                    (reason, now, ref),
+                )
+
+    def succeed_job(self, ref: str, model_ref: str) -> bool:
+        now = _utc_now_z()
+        with self._locked() as conn:
+            with conn:
+                model = conn.execute(
+                    "SELECT id FROM models WHERE ref = ? AND deleted = 0",
+                    (model_ref,),
+                ).fetchone()
+                if model is None:
+                    raise RuntimeError(f"model {model_ref} missing at job success")
+                cursor = conn.execute(
+                    """
+                    UPDATE jobs
+                    SET status = 'SUCCEEDED',
+                        model_id = ?,
+                        finished_at = ?
+                    WHERE ref = ?
+                      AND status = 'RUNNING'
+                      AND cancel_requested = 0
+                    """,
+                    (int(model["id"]), now, ref),
+                )
+                return cursor.rowcount == 1
+
+    def complete_training_success(
+        self,
+        ref: str,
+        *,
+        artifact_bytes: bytes,
+        metrics: Any,
+        created_at: str,
+        model_ref: str | None = None,
+    ) -> Literal["succeeded", "canceled"]:
+        """Register the trained model, write ONNX, and succeed the job.
+
+        Cancel, artifact write, INSERT, and SUCCEEDED share one lock so a
+        first trained version cannot become active without `model.onnx`, and
+        a late cancel cannot lose to SUCCEEDED.
+        """
+
+        now = _utc_now_z()
+        created_dir: str | None = None
+        try:
+            with self._locked() as conn:
+                with conn:
+                    row = conn.execute(
+                        """
+                        SELECT status, cancel_requested FROM jobs WHERE ref = ?
+                        """,
+                        (ref,),
+                    ).fetchone()
+                    if row is None or str(row["status"]) != "RUNNING":
+                        return "canceled"
+                    if int(row["cancel_requested"]) == 1:
+                        conn.execute(
+                            """
+                            UPDATE jobs
+                            SET status = 'CANCELED', finished_at = ?
+                            WHERE ref = ? AND status = 'RUNNING'
+                            """,
+                            (now, ref),
+                        )
+                        return "canceled"
+                    new_ref = model_ref or str(uuid.uuid4())
+                    created_dir = self._insert_trained_model_locked(
+                        conn,
+                        ref=new_ref,
+                        created_at=created_at,
+                        metrics=metrics,
+                        artifact_bytes=artifact_bytes,
+                    )
+                    model = conn.execute(
+                        "SELECT id FROM models WHERE ref = ? AND deleted = 0",
+                        (new_ref,),
+                    ).fetchone()
+                    if model is None:
+                        raise RuntimeError("trained model missing after insert")
+                    conn.execute(
+                        """
+                        UPDATE jobs
+                        SET status = 'SUCCEEDED',
+                            model_id = ?,
+                            finished_at = ?
+                        WHERE ref = ? AND status = 'RUNNING'
+                        """,
+                        (int(model["id"]), now, ref),
+                    )
+        except Exception:
+            if created_dir is not None:
+                remove_tree_if_present(self.data_dir, created_dir)
+            raise
+        return "succeeded"
+
+    def record_epoch(
+        self,
+        ref: str,
+        *,
+        epoch: int,
+        train_loss: float,
+        val_loss: float,
+        val_accuracy: float,
+        duration_seconds: float,
+        created_at: str,
+    ) -> None:
+        payload = {
+            "epoch": epoch,
+            "train_loss": train_loss,
+            "val_loss": val_loss,
+            "val_accuracy": val_accuracy,
+            "duration_seconds": duration_seconds,
+        }
+        with self._locked() as conn:
+            with conn:
+                row = conn.execute(
+                    "SELECT id FROM jobs WHERE ref = ?",
+                    (ref,),
+                ).fetchone()
+                if row is None:
+                    raise RuntimeError(f"job {ref} missing while recording epoch")
+                conn.execute(
+                    """
+                    UPDATE jobs SET current_epoch = ?
+                    WHERE ref = ? AND status = 'RUNNING'
+                    """,
+                    (epoch, ref),
+                )
+                conn.execute(
+                    """
+                    INSERT INTO job_epoch_logs (
+                        job_id, epoch, train_loss, val_loss,
+                        val_accuracy, duration_seconds, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        int(row["id"]),
+                        epoch,
+                        train_loss,
+                        val_loss,
+                        val_accuracy,
+                        duration_seconds,
+                        created_at,
+                    ),
+                )
+        log_dir = ensure_dir(self.data_dir, f"jobs/{ref}")
+        log_path = log_dir / "epochs.jsonl"
+        with log_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload) + "\n")
+
+    def list_job_logs_page(
+        self, ref: str, *, limit: int, offset: int
+    ) -> tuple[list[dict[str, Any]], int]:
+        with self._locked() as conn:
+            job = conn.execute(
+                "SELECT id FROM jobs WHERE ref = ?",
+                (ref,),
+            ).fetchone()
+            if job is None:
+                return [], 0
+            job_id = int(job["id"])
+            total = int(
+                conn.execute(
+                    "SELECT COUNT(*) AS n FROM job_epoch_logs WHERE job_id = ?",
+                    (job_id,),
+                ).fetchone()["n"]
+            )
+            rows = conn.execute(
+                """
+                SELECT epoch, train_loss, val_loss, val_accuracy, duration_seconds
+                FROM job_epoch_logs
+                WHERE job_id = ?
+                ORDER BY epoch ASC
+                LIMIT ? OFFSET ?
+                """,
+                (job_id, limit, offset),
+            ).fetchall()
+        items = [
+            {
+                "epoch": int(row["epoch"]),
+                "train_loss": float(row["train_loss"]),
+                "val_loss": float(row["val_loss"]),
+                "val_accuracy": float(row["val_accuracy"]),
+                "duration_seconds": float(row["duration_seconds"]),
+            }
             for row in rows
         ]
+        return items, total
 
     def list_models(self) -> list[ModelRow]:
         with self._locked() as conn:
@@ -685,48 +1101,24 @@ class Store:
         ref: str,
         created_at: str,
         metrics: Any = None,
+        artifact_bytes: bytes | None = None,
     ) -> ModelRow:
         """Allocate the next version, create its directory, then insert.
 
         Auto-activation (REQ-F-MDL-004) is decided in this same transaction.
-        If the directory cannot be created, no row is written.
+        If the directory or artifact cannot be created, no row is written.
         """
 
-        metrics_json = None if metrics is None else json.dumps(metrics)
         created_dir: str | None = None
         try:
             with self._locked() as conn:
                 with conn:
-                    max_row = conn.execute(
-                        "SELECT MAX(version) AS m FROM models"
-                    ).fetchone()
-                    raw_max = max_row["m"] if max_row is not None else None
-                    version = max(1, (0 if raw_max is None else int(raw_max)) + 1)
-                    artifact_dir = f"models/{version}"
-                    ensure_dir(self.data_dir, artifact_dir)
-                    created_dir = artifact_dir
-                    active = conn.execute(
-                        f"{_MODEL_SELECT} WHERE active = 1 AND deleted = 0 LIMIT 1"
-                    ).fetchone()
-                    activate = active is None or bool(active["builtin"])
-                    if activate:
-                        conn.execute("UPDATE models SET active = 0 WHERE active = 1")
-                    conn.execute(
-                        """
-                        INSERT INTO models (
-                            ref, version, builtin, active,
-                            metrics_json, artifact_dir, created_at, deleted
-                        )
-                        VALUES (?, ?, 0, ?, ?, ?, ?, 0)
-                        """,
-                        (
-                            ref,
-                            version,
-                            1 if activate else 0,
-                            metrics_json,
-                            artifact_dir,
-                            created_at,
-                        ),
+                    created_dir = self._insert_trained_model_locked(
+                        conn,
+                        ref=ref,
+                        created_at=created_at,
+                        metrics=metrics,
+                        artifact_bytes=artifact_bytes,
                     )
         except Exception:
             if created_dir is not None:
@@ -736,6 +1128,56 @@ class Store:
         if created is None:
             raise RuntimeError("failed to persist trained model")
         return created
+
+    def _insert_trained_model_locked(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        ref: str,
+        created_at: str,
+        metrics: Any,
+        artifact_bytes: bytes | None,
+    ) -> str:
+        metrics_json = None if metrics is None else json.dumps(metrics)
+        max_row = conn.execute("SELECT MAX(version) AS m FROM models").fetchone()
+        raw_max = max_row["m"] if max_row is not None else None
+        version = max(1, (0 if raw_max is None else int(raw_max)) + 1)
+        artifact_dir = f"models/{version}"
+        ensure_dir(self.data_dir, artifact_dir)
+        try:
+            if artifact_bytes is not None:
+                write_bytes(
+                    self.data_dir,
+                    f"{artifact_dir}/{TRAINED_ONNX_NAME}",
+                    artifact_bytes,
+                )
+            active = conn.execute(
+                f"{_MODEL_SELECT} WHERE active = 1 AND deleted = 0 LIMIT 1"
+            ).fetchone()
+            activate = active is None or bool(active["builtin"])
+            if activate:
+                conn.execute("UPDATE models SET active = 0 WHERE active = 1")
+            conn.execute(
+                """
+                INSERT INTO models (
+                    ref, version, builtin, active,
+                    metrics_json, artifact_dir, created_at, deleted
+                )
+                VALUES (?, ?, 0, ?, ?, ?, ?, 0)
+                """,
+                (
+                    ref,
+                    version,
+                    1 if activate else 0,
+                    metrics_json,
+                    artifact_dir,
+                    created_at,
+                ),
+            )
+        except Exception:
+            remove_tree_if_present(self.data_dir, artifact_dir)
+            raise
+        return artifact_dir
 
     def update_metrics(self, ref: str, metrics: Any) -> ModelRow | None:
         with self._locked() as conn:
@@ -1105,6 +1547,37 @@ FROM inferences AS inf
 JOIN images AS img ON img.id = inf.image_id
 JOIN models AS m ON m.id = inf.model_id
 """
+
+_JOB_SELECT = """
+SELECT
+    j.ref AS ref,
+    j.status AS status,
+    j.current_epoch AS current_epoch,
+    j.total_epochs AS total_epochs,
+    m.ref AS model_ref,
+    j.created_at AS created_at,
+    j.params_json AS params_json,
+    j.failed_reason AS failed_reason
+FROM jobs AS j
+LEFT JOIN models AS m ON m.id = j.model_id
+"""
+
+
+def _utc_now_z() -> str:
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _job_row(row: sqlite3.Row) -> JobRow:
+    return JobRow(
+        ref=row["ref"],
+        status=row["status"],
+        current_epoch=int(row["current_epoch"]),
+        total_epochs=int(row["total_epochs"]),
+        model_ref=row["model_ref"],
+        created_at=row["created_at"],
+        params=_decode_json(row["params_json"]),
+        failed_reason=row["failed_reason"],
+    )
 
 
 def _suggestion_row(row: sqlite3.Row) -> SuggestionRow:

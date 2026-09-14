@@ -15,6 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from faunalab.api.errors import AppError, internal_error_response, problem_response
 from faunalab.api.images import router as images_router
 from faunalab.api.inferences import router as inferences_router
+from faunalab.api.jobs import router as jobs_router
 from faunalab.api.labels import router as labels_router
 from faunalab.api.models import router as models_router
 from faunalab.api.sample import router as sample_router
@@ -23,8 +24,10 @@ from faunalab.api.splits import router as splits_router
 from faunalab.api.state import router as state_router
 from faunalab.api.stats import router as stats_router
 from faunalab.api.suggestions import router as suggestions_router
+from faunalab.jobs.supervisor import start_worker, stop_worker
 from faunalab.ml.baseline import register_baseline_model
 from faunalab.ml.runtime import try_load_baseline_runtime
+from faunalab.ml.session_cache import OnnxSessionCache
 from faunalab.persist.store import Store
 from faunalab.settings import Settings, get_settings
 
@@ -48,10 +51,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         _app.state.baseline = inspection
         _app.state.baseline_runtime = runtime
+        _app.state.onnx_sessions = OnnxSessionCache()
         _app.state.store = store
+        worker = start_worker(resolved.data_dir, resolved.assets_dir)
+        _app.state.worker = worker
         try:
             yield
         finally:
+            stop_worker(worker)
             store.close()
 
     # Swagger UI / ReDoc は既定で CDN を読む。
@@ -106,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(sample_router)
     app.include_router(models_router)
     app.include_router(inferences_router)
+    app.include_router(jobs_router)
     app.include_router(suggestions_router)
     dist = resolved.web_dist_dir
     if dist.is_dir():

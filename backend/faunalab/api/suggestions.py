@@ -8,8 +8,8 @@ from fastapi import APIRouter, Query, Request
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field
 
+from faunalab.api.active_infer import infer_images_for_model, require_active_model
 from faunalab.api.errors import (
-    baseline_unavailable,
     error_for_code,
     image_not_found,
     no_active_model,
@@ -17,7 +17,6 @@ from faunalab.api.errors import (
 )
 from faunalab.api.state import utc_now_z
 from faunalab.domain.suggestions import MAX_SUGGESTION_IMAGES
-from faunalab.ml.runtime import BaselineRuntime
 from faunalab.persist.files import resolve_under
 from faunalab.persist.store import (
     ImageNotFoundError,
@@ -52,10 +51,6 @@ def _store(request: Request) -> Store:
     return request.app.state.store
 
 
-def _runtime(request: Request) -> BaselineRuntime | None:
-    return getattr(request.app.state, "baseline_runtime", None)
-
-
 def _suggestion_to_api(row: SuggestionRow) -> dict[str, Any]:
     return {
         "image_ref": row.image_ref,
@@ -72,17 +67,9 @@ def _pil_from_store(store: Store, row: ImageRow) -> Image.Image:
         return loaded.copy()
 
 
-def _require_active_runtime(
-    request: Request,
-) -> tuple[Store, ModelRow, BaselineRuntime]:
+def _require_active_model(request: Request) -> tuple[Store, ModelRow]:
     store = _store(request)
-    model = store.get_active_model()
-    if model is None:
-        raise no_active_model()
-    runtime = _runtime(request)
-    if not model.builtin or runtime is None:
-        raise baseline_unavailable()
-    return store, model, runtime
+    return store, require_active_model(store)
 
 
 def _parse_refs(raw: list[str]) -> list[str]:
@@ -154,7 +141,7 @@ def create_suggestions(
     body: SuggestionCreateRequest | None = None,
 ) -> dict[str, Any]:
     refs = _parse_create_refs(body)
-    store, model, runtime = _require_active_runtime(request)
+    store, model = _require_active_model(request)
     skipped_labeled = 0
     if refs is None:
         targets = _unlabeled_targets(store)
@@ -184,7 +171,7 @@ def create_suggestions(
     try:
         for row in targets:
             pil_images.append(_pil_from_store(store, row))
-        folded = runtime.infer_images(pil_images)
+        folded = infer_images_for_model(request, store, model, pil_images)
         created_at = utc_now_z()
         items = [
             SuggestionNew(

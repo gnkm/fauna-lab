@@ -21,15 +21,17 @@ ERROR_STATUS: dict[str, int] = {
     "image_not_found": 404,
     "model_not_found": 404,
     "job_not_found": 404,
+    "suggestion_not_found": 404,
     "image_duplicate": 409,
     "model_not_deletable": 409,
+    "job_not_cancelable": 409,
     "payload_too_large": 413,
     "unsupported_media_type": 415,
     "sample_unavailable": 422,
     "empty_test_split": 422,
     "no_active_model": 422,
     "baseline_unavailable": 422,
-    "suggestion_not_found": 404,
+    "training_precondition": 422,
     "internal_error": 500,
 }
 
@@ -69,6 +71,10 @@ def image_not_found() -> AppError:
 
 def model_not_found() -> AppError:
     return error_for_code("model_not_found", "指定したモデル版は存在しません。")
+
+
+def job_not_found() -> AppError:
+    return error_for_code("job_not_found", "指定した学習ジョブは存在しません。")
 
 
 def no_active_model() -> AppError:

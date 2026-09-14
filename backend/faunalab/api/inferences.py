@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from starlette.datastructures import FormData, UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from faunalab.api.active_infer import infer_images_for_model
 from faunalab.api.errors import (
     AppError,
     baseline_unavailable,
@@ -244,7 +245,7 @@ async def create_inferences(request: Request) -> dict[str, Any]:
     if model is None:
         raise no_active_model()
     runtime = _runtime(request)
-    if not model.builtin or runtime is None:
+    if model.builtin and runtime is None:
         raise baseline_unavailable()
 
     for data, _filename in files:
@@ -274,7 +275,7 @@ async def create_inferences(request: Request) -> dict[str, Any]:
             pil_images.append(_pil_from_store(store, row))
 
         started = time.perf_counter()
-        folded = runtime.infer_images(pil_images)
+        folded = infer_images_for_model(request, store, model, pil_images)
         duration_ms = int((time.perf_counter() - started) * 1000)
 
         for data, filename in files:

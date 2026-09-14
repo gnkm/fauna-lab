@@ -78,3 +78,32 @@ def fold_logits(logits: NDArray[np.floating], class_map: ClassMap) -> FoldResult
         top_class_id=top_class_id,
         top_confidence=top_confidence,
     )
+
+
+TRAINED_LOGIT_COUNT = 8
+
+
+def fold_trained_logits(logits: NDArray[np.floating]) -> FoldResult:
+    """Softmax over 8 system-class logits. other_mass is unused (null at API)."""
+
+    vector = np.asarray(logits, dtype=np.float64).reshape(-1)
+    if vector.shape[0] != TRAINED_LOGIT_COUNT:
+        raise ValueError(
+            f"trained logits must have length {TRAINED_LOGIT_COUNT}, got {vector.shape}"
+        )
+    probs = softmax(vector)
+    scores = {class_id: float(probs[index]) for index, class_id in enumerate(CLASS_IDS)}
+    top_class_id = CLASS_IDS[0]
+    top_confidence = scores[top_class_id]
+    for class_id in CLASS_IDS[1:]:
+        confidence = scores[class_id]
+        if confidence > top_confidence:
+            top_class_id = class_id
+            top_confidence = confidence
+    return FoldResult(
+        scores=scores,
+        other_mass=0.0,
+        uniform_fallback=False,
+        top_class_id=top_class_id,
+        top_confidence=top_confidence,
+    )
