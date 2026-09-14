@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { clearImages } from "./helpers";
 
+// VER-UI-001: 全画面の URL 直達とリロード後の表示保持。
+// VER-USE-002: 空状態の案内文言。
+
 const NAV_ITEMS = [
   { label: "概況", url: "/" },
   { label: "画像", url: "/images" },

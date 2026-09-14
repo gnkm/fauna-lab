@@ -7,6 +7,10 @@ import {
   PNG_RED,
 } from "./helpers";
 
+// VER-UI-001: 画像・アノテーション・分割の操作と `_state` 確認。
+// VER-ATT-002: ファイル名の HTML タグが画面上で解釈されないこと。
+// VER-USE-002: 画像削除の確認ダイアログ。
+
 test.beforeEach(async ({ request }) => {
   await clearImages(request);
 });

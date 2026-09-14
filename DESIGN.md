@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 対象 Issue | #3（機能 ID F002）、#7（機能 ID F006） |
+| 対象 Issue | #3（機能 ID F002）、#7（機能 ID F006）、F018 |
 | 正本 | SRS-FAUNALAB-002 **版 2.2**、TASK-FAUNALAB-001 版 1.0 |
 | 状態 | 実装前の枠と初期判断。実装と食い違ったら実装に合わせて更新する。最終一致確認は F019 |
 | 関連 | 言語・実行形態・データ配置の実装前合意は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（F001 / #2）。API パス・誤り語彙の契約は [openapi.yaml](openapi.yaml)（F006 / #7）。本ファイルは提出物の設計書であり、転記したうえで API・誤り・観測変換をここで固定する |
@@ -514,31 +514,39 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 
 ## 9. 検証の方針
 
-タスク書類は「すべての検証項目を実装する必要はない。範囲と理由を明記せよ」と定める。本節は実装前の選択である。カバレッジ表は試験コード側にも REQ/VER ID をコメントまたは一覧で残す。
+タスク書類は「すべての検証項目を実装する必要はない。範囲と理由を明記せよ」と定める。対応の正本は [docs/verification-matrix.md](docs/verification-matrix.md)。pytest は関数名・docstring の `VER-*` からマーカー（例: `ver_obs_001`）を付ける。
+
+単一コマンドは `pnpm test`（`uv run --directory backend pytest`）。行カバレッジ 70 % 未満で失敗する。外部ネットワークに依存しない。
 
 ### 9.1 自動試験（pytest、ネットワーク無し）
 
-優先して自動試験にする（機械照合が可能で、観測契約・誤分類・ベースラインに直結するため）:
+実装済み（対応表の試験列から辿れる）:
 
 - VER-OBS-001（`_state` 構造・列挙・副作用無し。一致判定は `observed_at` を除く）
-- VER-API-001 のうち OpenAPI と 7 類ステータスの区別、本文にパス/トレースが無いこと
+- VER-API-001 のうち OpenAPI の path+method と実装の一致、7 類ステータスの区別、本文にパス/トレースが無いこと。全操作の網羅呼び出しは F019
 - VER-F-IMG-001〜005、VER-F-ANN-001、VER-F-DS-001〜002
-- VER-F-TRN-001〜007（プロセス強制終了はコンテナ内で pytest から子プロセスを落とす）
+- VER-F-TRN-001〜007（強制終了は残存 `RUNNING` の再起動で代替。自動試験は短縮エポック）
 - VER-F-MDL-001〜002、VER-F-INF-001〜002
 - VER-F-BASE-001〜004、VER-F-SUG-001〜004、VER-F-SYS-001
 - VER-DATA-001〜004
 - VER-ATT-001 の API 部分
 - VER-ATT-002 のうちパス横断・特殊文字列・サイズ上限（REQ-ATT-SEC-001〜003、005）。HTML エスケープ表示（REQ-ATT-SEC-004）は 9.2
-- VER-ATT-003 のうち試験コマンド 1 回・カバレッジ 70 %・静的解析。README 記載項目の網羅は検査（I）として同じコマンド列に含める
-- VER-CON-002 のライセンス一覧と環境変数
-
-試験の単一コマンドは骨格 Issue で固定する（`uv run pytest` または compose）。Playwright ブラウザ取得はセットアップ段階。
+- VER-ATT-003（試験コマンド 1 回、カバレッジ 70 %、静的解析設定、README 記載項目）
+- VER-ATT-004 の縮小複製（画像・確定ラベル・候補・モデル版・有効選択を含む。別ホスト手順は提出時）
+- VER-CON-001 の Compose 代替（`pull_policy: never` と masquerade 無効）
+- VER-CON-002 のライセンス一覧・環境変数・偶然水準（短縮エポック）
 
 ### 9.2 UI 自動操作（Playwright）
 
-SRS 4.0 は「状態変更は Web UI 自動操作、確認は `_state`」と書く。次を UI 経由でも 1 本以上通す: サンプル投入 → 候補生成/採用 → 学習開始の観測 → 推論。VER-UI-001 の全画面・全 URL は段階的に足す。VER-ATT-002 の HTML エスケープ表示（ファイル名にタグを含む入力が画面上で解釈されないこと）もここに含める。
+SRS 4.0 は「状態変更は Web UI 自動操作、確認は `_state`」と書く。`pnpm test:e2e` で次を通す。ブラウザ取得はセットアップ段階。
 
-F016 で追加した経路: 複数 JPEG/PNG のアップロード（一部失敗を含む）→ 1 枚付与と一括付与 → 分割実行 → 概況件数と `_state` のラベル・分割。破壊的削除の確認ダイアログ（VER-USE-002）。候補操作は F012 待ちのためこの経路に含めない。
+- VER-UI-001 の全画面 URL 直達とリロード（`e2e/overview.spec.ts`）
+- 画像アップロード（一部失敗）→ 1 枚付与と一括付与 → 分割 → `_state`（`e2e/images-annotate-splits.spec.ts`）
+- 学習・モデル・推論・候補（`e2e/train-models-infer.spec.ts`）。実行中ジョブは手動操作なしで表示更新
+- VER-ATT-002 の HTML エスケープ表示
+- VER-USE-002 の削除確認ダイアログと空状態案内
+
+全 REQ-UI-001〜026 の網羅は段階的であり、本提出では主要画面と主経路に限る。
 
 ### 9.3 手動または提出時の実証
 
@@ -547,47 +555,48 @@ F016 で追加した経路: 複数 JPEG/PNG のアップロード（一部失敗
 | VER-USE-001（15 分被験者） | 被験者試験はリポジトリの自動試験に載せない。手順と画面案内は README / UI 空状態文で担保し、人間レビューに委ねる |
 | VER-USE-003（コントラスト・キーボード） | 推奨（S）。自動計測は任意。AA は目指すが初期自動試験の必須から外す |
 | VER-PERF-001〜003 | 基準環境（4 論理 CPU、8 GB）での測定が必要。Cloud Agent では参考値のみ。提出前に測定結果を本節へ追記する |
-| VER-CON-001（ネット遮断起動） | compose の `--pull never` と実行時クライアント不在で設計適合。実遮断は提出環境で実証 |
-| VER-COM-001（遮断下の投入・学習・推論） | REQ-COM-002。起動だけでなく一連操作が外部ネット無しで完了することを提出環境で実証する。自動試験はネットワークに依存しないが、ホストの遮断そのものは提出時手順とする |
-| VER-ATT-004（ディレクトリ複製） | 停止後のディレクトリ全体コピーという契約（ARCHITECTURE.md 6.4）を手順試験にする。CI では縮小データで可 |
+| VER-CON-001（ネット遮断起動） | Compose の `--pull never` と masquerade 無効を自動検査する。ホスト NIC 切断の実遮断は提出環境で実証 |
+| VER-COM-001（遮断下の投入・学習・推論） | 完全エアギャップは VM 制約で自動試験にしない。一連操作自体はネット非依存の pytest / Playwright で担保する |
+| VER-ATT-004 の提出時コピー | 自動試験は同一ホストの縮小コピー。別環境へのディレクトリ複製手順は ARCHITECTURE.md 6.4 |
 
 ### 9.4 初期に自動試験しないもの
 
-- VER-USE-002 の全画面目視。空状態文言はコンポーネント試験または Playwright の部分で拾う。
+- VER-USE-002 の全画面目視。空状態と確認ダイアログは Playwright で部分的に拾う。
 - GPU 経路。GPU は任意であり、CPU 経路だけを自動試験する。
+- VER-API-001 の「文書に記載されたすべての操作を呼び出す」完全網羅。パス集合の一致と 7 類は 9.1。残りは F019。
 
-行カバレッジ 70 %（REQ-ATT-MNT-001）は pytest-cov で計測する。届かないモジュールは F019 までに埋める。
+行カバレッジ 70 %（REQ-ATT-MNT-001）は pytest-cov の `fail_under = 70` で落とす。
 
 ### 9.5 検証項目の配置（漏れ防止）
 
-SRS 4 章の識別子を、上の区分へ対応付ける。未記載のまま後続へ送らない。
+識別子ごとの試験名・制限は [docs/verification-matrix.md](docs/verification-matrix.md) を正とする。本表は区分の要約である。
 
 | 識別子 | 区分 | メモ |
 | --- | --- | --- |
 | VER-OBS-001 | 9.1 | `observed_at` 除外の一致 |
-| VER-API-001 | 9.1 | |
-| VER-UI-001 | 9.2 | 全画面は段階的 |
-| VER-COM-001 | 9.3 | 遮断下の一連操作 |
-| VER-F-IMG-001〜005 | 9.1 | |
-| VER-F-ANN-001 | 9.1 | |
-| VER-F-DS-001〜002 | 9.1 | |
-| VER-F-TRN-001〜007 | 9.1 | |
-| VER-F-MDL-001〜002 | 9.1 | |
-| VER-F-INF-001〜002 | 9.1 | |
-| VER-F-BASE-001〜004 | 9.1 | |
+| VER-API-001 | 9.1 | パス一致・7 類・本文漏洩。全操作呼び出しは F019 |
+| VER-UI-001 | 9.2 | 全画面 URL。REQ-UI 全項目の網羅は段階的 |
+| VER-COM-001 | 9.3 | 遮断下の一連操作は提出時 |
+| VER-F-IMG-001〜005 | 9.1 | `test_images.py` |
+| VER-F-ANN-001 | 9.1 | `test_labels.py` |
+| VER-F-DS-001〜002 | 9.1 | `test_splits.py` |
+| VER-F-TRN-001〜007 | 9.1 | `test_jobs.py`。短縮エポック |
+| VER-F-MDL-001〜002 | 9.1 | `test_metrics.py` / `test_models.py` / `test_jobs.py` |
+| VER-F-INF-001〜002 | 9.1 | `test_inferences.py` |
+| VER-F-BASE-001〜004 | 9.1 | `test_inferences.py` / `test_baseline.py` |
 | VER-F-SUG-001〜004 | 9.1 | `backend/tests/test_suggestions.py` |
-| VER-F-SYS-001 | 9.1 | |
+| VER-F-SYS-001 | 9.1 | `test_state.py` / `test_sample.py` |
 | VER-USE-001 | 9.3 | 被験者。自動試験にしない |
-| VER-USE-002 | 9.4 | 空状態は Playwright 部分。全画面目視は初期対象外 |
+| VER-USE-002 | 9.2 / 9.4 | 空状態と確認は Playwright。全画面目視は対象外 |
 | VER-USE-003 | 9.3 | 推奨（S） |
 | VER-PERF-001〜003 | 9.3 | 基準環境で提出前に測定 |
 | VER-DATA-001〜004 | 9.1 | |
-| VER-CON-001 | 9.3 | 遮断起動 |
-| VER-CON-002 | 9.1 | |
+| VER-CON-001 | 9.1 / 9.3 | Compose 検査は自動。実遮断は提出時 |
+| VER-CON-002 | 9.1 | ライセンス・環境変数・偶然水準 |
 | VER-ATT-001 | 9.1 | API 部分 |
 | VER-ATT-002 | 9.1 / 9.2 | ファイル系は pytest、HTML 表示は Playwright |
 | VER-ATT-003 | 9.1 | 試験コマンド・カバレッジ・静的解析・README |
-| VER-ATT-004 | 9.3 | |
+| VER-ATT-004 | 9.1 / 9.3 | 縮小複製は自動。別ホストは提出時 |
 
 ---
 

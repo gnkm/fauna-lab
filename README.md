@@ -68,7 +68,7 @@ uv sync --directory backend --frozen
 | UI 受入（Playwright） | `pnpm test:e2e`（先に `pnpm --filter web build`。ブラウザは `pnpm exec playwright install chromium`。システムの Google Chrome を使う場合は `PW_CHANNEL=chrome`） |
 | 静的解析（単一） | `pnpm lint` |
 
-`pnpm test` は `uv run --directory backend pytest` である。カバレッジは計測するが、70 % 未満で落とす enforce は F018/F019（未実装コードで落とさないため）。
+`pnpm test` は `uv run --directory backend pytest` である。行カバレッジ 70 % 未満で失敗する（REQ-ATT-MNT-001）。SRS 4 章の VER ID から試験へは [docs/verification-matrix.md](docs/verification-matrix.md) または `pytest -m ver_obs_001` で辿る。
 
 `pnpm lint` は Biome（フロント）と Ruff / Pyright（バックエンド）をまとめて実行する。
 

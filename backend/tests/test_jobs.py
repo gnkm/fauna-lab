@@ -577,7 +577,7 @@ def test_suggestions_are_not_counted(baseline_client: TestClient) -> None:
 
 
 def test_chance_level_beaten_on_baseline_head(baseline_client: TestClient) -> None:
-    """REQ-CON-008: 少なくとも 1 条件で偶然水準 0.125 を上回る。"""
+    """VER-CON-002: 少なくとも 1 条件で偶然水準 0.125 を上回る。"""
     _ready_baseline_set(baseline_client, train_a=8, train_b=8, val=2, test=4)
     done = wait_job(
         baseline_client,
