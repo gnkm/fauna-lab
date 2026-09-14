@@ -59,6 +59,9 @@ def assert_observation_invariants(state: dict[str, Any]) -> None:
             assert job["failed"] is True
         else:
             assert job["failed"] is False
+        # REQ-DATA-010: 削除済モデルを指す model_ref は models に無くてよい。
+        if job["model_ref"] is not None:
+            assert isinstance(job["model_ref"], str)
 
     inferences = state["inferences"]
     inf_refs = [item["ref"] for item in inferences]
@@ -66,3 +69,16 @@ def assert_observation_invariants(state: dict[str, Any]) -> None:
     image_ref_set = set(refs)
     for item in inferences:
         assert item["image_ref"] in image_ref_set
+
+
+def assert_job_kept_after_model_delete(
+    state: dict[str, Any], *, job_ref: str, deleted_model_ref: str
+) -> None:
+    """REQ-DATA-010: モデル版削除後もジョブ履歴が `_state` に残る。"""
+
+    jobs = {item["ref"]: item for item in state["jobs"]}
+    assert job_ref in jobs
+    assert jobs[job_ref]["status"] in JOB_STATUSES
+    assert jobs[job_ref]["model_ref"] in {deleted_model_ref, None}
+    visible = {item["ref"] for item in state["models"]}
+    assert deleted_model_ref not in visible
