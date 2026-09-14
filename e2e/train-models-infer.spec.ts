@@ -49,6 +49,16 @@ test("学習フォームは既定値を出し、空でも準備中と書かな�
   await expect(page.getByTestId("train-epochs")).toHaveValue("10");
   await expect(page.getByTestId("train-batch")).toHaveValue("32");
   await expect(page.getByTestId("train-lr")).toHaveValue("0.001");
+  await expect(page.getByTestId("train-lr")).toHaveAttribute("min", "0.0001");
+  await page.getByTestId("train-lr").fill("0");
+  await expect
+    .poll(async () =>
+      page
+        .getByTestId("train-lr")
+        .evaluate((el) => (el as HTMLInputElement).validity.rangeUnderflow),
+    )
+    .toBe(true);
+  await page.getByTestId("train-lr").fill("0.001");
   await expect(page.getByTestId("train-seed")).toHaveValue("42");
   await expect(page.getByTestId("train-aug")).toBeChecked();
   await expect(page.getByTestId("train-baseline")).toBeChecked();
