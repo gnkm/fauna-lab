@@ -8,22 +8,17 @@ from tests.ver_catalog import (
     VER_RE,
     load_matrix,
     marker_slug,
+    parse_test_refs,
+    python_function_names,
+    ref_covers_ver_id,
+    resolve_matrix_test_path,
     srs_ver_ids,
 )
 
 SEARCH_SUFFIXES = {".py", ".ts", ".md"}
 SKIP_PARTS = {".venv", "node_modules", ".git", "assets"}
-
-
-def _repo_text_with_ver() -> str:
-    chunks: list[str] = []
-    for path in REPO_ROOT.rglob("*"):
-        if not path.is_file() or path.suffix not in SEARCH_SUFFIXES:
-            continue
-        if any(part in SKIP_PARTS for part in path.parts):
-            continue
-        chunks.append(path.read_text(encoding="utf-8", errors="ignore"))
-    return "\n".join(chunks)
+# 対応表と DESIGN の再掲だけでは、試験が存在する扱いにしない。
+SKIP_NAMES = {MATRIX_PATH.name, "DESIGN.md"}
 
 
 def test_verification_matrix_lists_every_srs_ver_id() -> None:
@@ -41,16 +36,26 @@ def test_verification_matrix_lists_every_srs_ver_id() -> None:
 
 
 def test_automated_ver_ids_are_mentioned_in_tests() -> None:
-    """pytest / inspect 行は試験コードか対応表以外の文書から辿れる。"""
+    """pytest / inspect / playwright 行の試験列は実ファイルと関数を指す。"""
 
-    blob = _repo_text_with_ver()
     for row in load_matrix():
         automated = any(
             token in row.method for token in ("pytest", "inspect", "playwright")
         )
         if not automated:
             continue
-        assert row.ver_id in blob, row.ver_id
+        refs = parse_test_refs(row.tests)
+        assert refs, f"{row.ver_id}: 試験列にファイルが無い: {row.tests!r}"
+        covered = False
+        for spec, func in refs:
+            path = resolve_matrix_test_path(spec)
+            assert path.is_file(), f"{row.ver_id}: missing {path}"
+            if func is not None and path.suffix == ".py":
+                names = python_function_names(path)
+                assert func in names, f"{row.ver_id}: {path.name} has no {func}"
+            if ref_covers_ver_id(path, func, row.ver_id):
+                covered = True
+        assert covered, f"{row.ver_id}: 試験列のファイルに VER ID が無い"
         slug = marker_slug(row.ver_id)
         assert slug.startswith("ver_")
 
@@ -63,6 +68,8 @@ def test_issue_verification_finds_ver_mapping() -> None:
         if path.suffix not in SEARCH_SUFFIXES or not path.is_file():
             continue
         if any(part in SKIP_PARTS for part in path.parts):
+            continue
+        if path.name in SKIP_NAMES:
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
         if "VER-" in text:

@@ -15,6 +15,9 @@ ROW_RE = re.compile(
     r"^\| `(VER-[A-Z]+(?:-[A-Z]+)*-\d{3})` \| ([^|]+) \| ([^|]+) \|"
 )
 TEST_NAME_RE = re.compile(r"^test_ver_([a-z0-9_]+)_(\d{3})(?:_|$)")
+# 試験列から pytest / Playwright の参照を拾う。対応表自身は対象外。
+TEST_REF_RE = re.compile(r"(e2e/[\w./-]+\.ts|[\w.-]+\.py)(?:::([A-Za-z_][\w]*))?")
+PY_DEF_RE = re.compile(r"^def ([A-Za-z_][\w]*)\(", re.MULTILINE)
 
 
 class MatrixRow(NamedTuple):
@@ -59,3 +62,28 @@ def srs_ver_ids() -> set[str]:
 
 def ver_ids_in_text(text: str) -> set[str]:
     return set(VER_RE.findall(text))
+
+
+def parse_test_refs(tests: str) -> list[tuple[str, str | None]]:
+    """試験列から (ファイル, 任意の関数名) を取り出す。"""
+
+    return [(match.group(1), match.group(2)) for match in TEST_REF_RE.finditer(tests)]
+
+
+def resolve_matrix_test_path(spec: str) -> Path:
+    if spec.startswith("e2e/"):
+        return REPO_ROOT / spec
+    return REPO_ROOT / "backend" / "tests" / Path(spec).name
+
+
+def python_function_names(path: Path) -> set[str]:
+    return set(PY_DEF_RE.findall(path.read_text(encoding="utf-8")))
+
+
+def ref_covers_ver_id(path: Path, func: str | None, ver_id: str) -> bool:
+    text = path.read_text(encoding="utf-8")
+    if ver_id in text:
+        return True
+    if func is not None and ver_id_from_test_name(func) == ver_id:
+        return True
+    return False
