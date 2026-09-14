@@ -48,7 +48,11 @@ def test_ver_att_001_malformed_requests_keep_process(client: TestClient) -> None
             "/api/images/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee/label",
             json={"class_id": 1},
         ),
-        client.post("/api/jobs", content=b"", headers={"content-type": "application/json"}),
+        client.post(
+            "/api/jobs",
+            content=b"",
+            headers={"content-type": "application/json"},
+        ),
         client.post(
             "/api/labels/bulk",
             json={"refs": ["x" * 8000], "class_id": "samoyed"},

@@ -444,7 +444,8 @@ def test_ver_f_base_004_class_map_swap_changes_inference(tmp_path: Path) -> None
     before = _fingerprint(REPO_ASSETS)
 
     original_assets = _copy_baseline(tmp_path / "orig")
-    with TestClient(create_app(_settings(tmp_path / "orig-data", original_assets))) as client:
+    original_settings = _settings(tmp_path / "orig-data", original_assets)
+    with TestClient(create_app(original_settings)) as client:
         first = _post_files(client, [(Path(sample["file"]).name, image_bytes)])
         assert first.status_code == 200, first.text
         original_top = first.json()["items"][0]["top_class_id"]
@@ -452,7 +453,8 @@ def test_ver_f_base_004_class_map_swap_changes_inference(tmp_path: Path) -> None
 
     swapped_assets = _copy_baseline(tmp_path / "swap")
     _swap_samoyed_boxer_and_retarget(swapped_assets)
-    with TestClient(create_app(_settings(tmp_path / "swap-data", swapped_assets))) as client:
+    swapped_settings = _settings(tmp_path / "swap-data", swapped_assets)
+    with TestClient(create_app(swapped_settings)) as client:
         second = _post_files(client, [(Path(sample["file"]).name, image_bytes)])
         assert second.status_code == 200, second.text
         swapped_top = second.json()["items"][0]["top_class_id"]
