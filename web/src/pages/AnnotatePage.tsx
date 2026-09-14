@@ -7,6 +7,7 @@ import { ClassSelect } from "../components/ClassSelect";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { FilterBar } from "../components/FilterBar";
+import { SuggestionPanel } from "../components/SuggestionPanel";
 import { ThumbnailCard } from "../components/ThumbnailCard";
 import { SYSTEM_CLASSES } from "../domain/classes";
 import {
@@ -376,17 +377,13 @@ export function AnnotatePage() {
         </p>
       </section>
 
-      <section aria-labelledby="suggest-heading">
-        <h2 id="suggest-heading">候補ラベル</h2>
-        <p data-testid="suggestion-unavailable">
-          候補の生成・採用・却下・閾値一括採用は、候補 API
-          がまだ接続されていないためこの画面では操作できません。有効モデルができたあとに
-          <Link to="/">概況</Link>
-          から案内します。確定ラベルと分割はこの画面と
-          <Link to="/splits">分割</Link>
-          で進められます。
-        </p>
-      </section>
+      <SuggestionPanel
+        selectedRefs={selectedRefs}
+        pending={pending}
+        onChanged={async () => {
+          await reloadList();
+        }}
+      />
 
       {empty ? (
         <EmptyState title="ラベルを付ける画像がありません">

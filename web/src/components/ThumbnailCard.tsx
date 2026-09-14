@@ -1,4 +1,5 @@
 import { displayNameFor, SPLIT_LABELS } from "../domain/classes";
+import { formatPercent } from "../domain/format";
 import { type ImageItem, thumbnailUrl } from "../domain/images";
 
 export function ThumbnailCard({
@@ -57,9 +58,9 @@ export function ThumbnailCard({
         ) : (
           <span className="badge badge--none">未ラベル</span>
         )}
-        {suggestionText !== null ? (
+        {suggestionText !== null && image.suggestion !== null ? (
           <span className="badge badge--suggestion">
-            候補: {suggestionText}
+            候補: {suggestionText} {formatPercent(image.suggestion.confidence)}
           </span>
         ) : null}
       </p>

@@ -217,19 +217,25 @@ function ActiveModelPanel({ stats }: { stats: Stats }) {
       <p data-testid="active-model">
         有効モデルは{kind}です。
         {versionLabel !== "" ? `（${versionLabel}）` : null}
-        識別子は <code>{model.ref}</code> です。
+        識別子は <code>{model.ref}</code> です。詳細は
+        <Link to="/models">モデル</Link>
+        で確認できます。
       </p>
     );
   }
   const reason = missingModelReason(stats);
   return (
-    <p data-testid="active-model-missing">有効モデルはありません。{reason}</p>
+    <p data-testid="active-model-missing">
+      有効モデルはありません。{reason}
+      <Link to="/models">モデル</Link>
+      画面を確認してください。
+    </p>
   );
 }
 
 function missingModelReason(stats: Stats): string {
   if (stats.baseline_registered) {
-    return "ベースラインは登録されていますが、有効化されていません。モデル画面で有効化してください。";
+    return "ベースラインは登録されていますが、有効化されていません。";
   }
   return "考えられる原因は、配布資産（ベースライン）がマウントされていないか検証に失敗したこと、または学習済モデルがまだ無いことです。";
 }
