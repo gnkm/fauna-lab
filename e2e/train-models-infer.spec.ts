@@ -64,7 +64,7 @@ test("実行中ジョブは手動再読み込みなしに 5 秒以上で進捗�
 }) => {
   test.setTimeout(30_000);
   let epoch = 0;
-  await page.route("**/api/jobs**", async (route) => {
+  await page.route(/\/api\/jobs/, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     if (request.method() === "GET" && url.pathname === "/api/jobs") {
@@ -134,7 +134,7 @@ test("実行中ジョブは手動再読み込みなしに 5 秒以上で進捗�
 });
 
 test("学習中止は確認ダイアログを出し、キャンセルできる", async ({ page }) => {
-  await page.route("**/api/jobs**", async (route) => {
+  await page.route(/\/api\/jobs/, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     if (request.method() === "GET" && url.pathname === "/api/jobs") {
@@ -173,7 +173,7 @@ test("学習中止は確認ダイアログを出し、キャンセルできる",
 
 test("モデル一覧は版 0 を内蔵と示し削除 UI を出さない", async ({ page }) => {
   const metrics = emptyMetrics();
-  await page.route("**/api/models**", async (route) => {
+  await page.route(/\/api\/models/, async (route) => {
     const url = new URL(route.request().url());
     if (route.request().method() === "GET" && url.pathname === "/api/models") {
       await route.fulfill({
@@ -262,7 +262,7 @@ test("推論結果は最上位と上位 3 を百分率・小数 1 位で示す",
     }
     await route.continue();
   });
-  await page.route("**/api/inferences**", async (route) => {
+  await page.route(/\/api\/inferences/, async (route) => {
     const method = route.request().method();
     if (method === "GET") {
       await route.fulfill({
@@ -322,7 +322,7 @@ test("候補は生成・採用・却下・閾値一括と昇順既定がある",
       model_ref: MODEL0,
     },
   ];
-  await page.route("**/api/suggestions**", async (route) => {
+  await page.route(/\/api\/suggestions/, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     if (request.method() === "GET" && url.pathname === "/api/suggestions") {
@@ -378,6 +378,7 @@ test("候補は生成・採用・却下・閾値一括と昇順既定がある",
   await expect(page.getByTestId("suggest-list")).toContainText("21.0%");
   await page.getByTestId("suggest-generate").click();
   await expect(page.getByText("候補を 1 件生成しました")).toBeVisible();
+  await expect(page.getByTestId("suggest-accept-threshold")).toBeEnabled();
   await page.getByTestId("suggest-accept-threshold").click();
   await expect(
     page.getByText("信頼度 80% 以上の候補を 1 件採用"),

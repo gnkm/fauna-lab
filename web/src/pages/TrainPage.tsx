@@ -26,8 +26,12 @@ async function loadRows(signal?: AbortSignal): Promise<JobRowView[]> {
   for (const job of page.items) {
     let latestLog: JobLogEntry | null = null;
     if (job.status === "RUNNING") {
-      const logs = await fetchJobLogs(job.ref, 200, 0, signal);
-      latestLog = logs.items.at(-1) ?? null;
+      try {
+        const logs = await fetchJobLogs(job.ref, 200, 0, signal);
+        latestLog = logs.items.at(-1) ?? null;
+      } catch {
+        latestLog = null;
+      }
     }
     rows.push({ ...job, latestLog });
   }
