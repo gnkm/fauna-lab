@@ -298,7 +298,7 @@ data/                    # 実行時（git 対象外）
 | プログラムインタフェース | pytest + HTTPX（ASGI） | OpenAPI が出揃ってから拡充 |
 | UI の一部 | Playwright | 状態変更を UI で行い、結果を `_state` で確認する経路から追加 |
 | 静的解析 | Biome / Ruff / Pyright | REQ-ATT-MNT-003。設定はリポジトリに含める |
-| カバレッジ | pytest-cov | 行カバレッジ 70 % 以上（REQ-ATT-MNT-001）。計測は骨格から入れる。閾値の fail は F018/F019 |
+| カバレッジ | pytest-cov | 行カバレッジ 70 % 以上（REQ-ATT-MNT-001）。`backend/pyproject.toml` の `fail_under = 70` で enforce する |
 
 試験の単一コマンドは `pnpm test`（内部は `uv run --directory backend pytest`）。静的解析の単一コマンドは `pnpm lint`。実行段階と同様、試験実行も外部ネットワークに依存しない。Playwright のブラウザ取得はセットアップ（イメージビルドまたは Cloud の `install`）に置く。
 
@@ -309,7 +309,6 @@ data/                    # 実行時（git 対象外）
 次は意図して本 Issue で固定しない（F006 以降で扱う）。
 
 - JSON フィールドの最終集合（`openapi.yaml` 骨格の必須キー以外。F019 で実装と一致）
-- pytest-cov の 70 % 閾値 enforce（F018/F019。骨格時点では計測のみ）
 
 パス・HTTP メソッド・ページネーション・誤り語彙は F006 の [`openapi.yaml`](../openapi.yaml) を正とする。SQLite 表は F007 で DESIGN.md 6.1 に固定した。
 

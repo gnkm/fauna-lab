@@ -5,6 +5,7 @@ Verification mapping:
 - VER-F-INF-002: test_ver_f_inf_002_model_ref_frozen_and_score_sum
 - VER-F-BASE-001: test_ver_f_base_001_http_inferences_match_expectations
 - VER-F-BASE-002: test_ver_f_base_002_scores_other_mass_unmapped_low_conf
+- VER-F-BASE-004: test_ver_f_base_004_class_map_swap_changes_inference
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from faunalab.domain.inferences import (
     is_low_confidence,
     ranked_scores,
 )
+from faunalab.ml.baseline import sha256_file
 from faunalab.ml.fold import FoldResult
 from faunalab.persist.store import ImageNotFoundError, Store
 from faunalab.settings import Settings, get_settings
@@ -406,3 +408,55 @@ def test_insert_failure_keeps_already_registered_image(
     images = baseline_client.get("/api/_state").json()["images"]
     assert [row["ref"] for row in images] == [existing]
     assert baseline_client.get("/api/_state").json()["inferences"] == []
+
+
+def _fingerprint(root: Path) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_file():
+            hashes[str(path.relative_to(root))] = sha256_file(path)
+    return hashes
+
+
+def _swap_samoyed_boxer_and_retarget(assets: Path) -> None:
+    class_map_path = assets / "baseline" / "class_map.json"
+    payload = json.loads(class_map_path.read_text(encoding="utf-8"))
+    payload["classes"]["samoyed"], payload["classes"]["boxer"] = (
+        payload["classes"]["boxer"],
+        payload["classes"]["samoyed"],
+    )
+    class_map_path.write_text(json.dumps(payload), encoding="utf-8")
+    digest = sha256_file(class_map_path)
+    manifest_path = assets / "baseline" / "MANIFEST.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for entry in manifest["files"]:
+        if entry["file"] == "class_map.json":
+            entry["sha256"] = digest
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def test_ver_f_base_004_class_map_swap_changes_inference(tmp_path: Path) -> None:
+    """VER-F-BASE-004: class_map を入れ替えると推論が変わり、assets/ は不変。"""
+
+    sample = json.loads(EXPECTATIONS_PATH.read_text(encoding="utf-8"))["items"][0]
+    assert sample["expected_top_class_id"] == "samoyed"
+    image_bytes = (FIXTURES / sample["file"]).read_bytes()
+    before = _fingerprint(REPO_ASSETS)
+
+    original_assets = _copy_baseline(tmp_path / "orig")
+    with TestClient(create_app(_settings(tmp_path / "orig-data", original_assets))) as client:
+        first = _post_files(client, [(Path(sample["file"]).name, image_bytes)])
+        assert first.status_code == 200, first.text
+        original_top = first.json()["items"][0]["top_class_id"]
+        assert original_top == "samoyed"
+
+    swapped_assets = _copy_baseline(tmp_path / "swap")
+    _swap_samoyed_boxer_and_retarget(swapped_assets)
+    with TestClient(create_app(_settings(tmp_path / "swap-data", swapped_assets))) as client:
+        second = _post_files(client, [(Path(sample["file"]).name, image_bytes)])
+        assert second.status_code == 200, second.text
+        swapped_top = second.json()["items"][0]["top_class_id"]
+    assert swapped_top != original_top
+    assert swapped_top == "boxer"
+    assert _fingerprint(REPO_ASSETS) == before
+    get_settings.cache_clear()

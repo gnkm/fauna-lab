@@ -37,6 +37,9 @@ addopts = [
     "--cov=faunalab",
     "--cov-report=term-missing",
 ]
+markers = [
+    "ver: SRS 4 章の検証識別子（VER-OBS-001 など）",
+]
 
 [tool.coverage.run]
 branch = true
@@ -44,7 +47,7 @@ source = ["faunalab"]
 
 [tool.coverage.report]
 skip_empty = true
-# fail_under は意図して未設定。70 % の enforce は F018/F019。
+fail_under = 70
 
 [tool.ruff]
 target-version = "py312"

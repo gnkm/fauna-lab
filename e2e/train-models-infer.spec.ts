@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { clearImages, FIXTURE_JPEG_A } from "./helpers";
 
+// VER-UI-001: 学習・モデル・推論・候補の画面。実行中ジョブの自動更新。
+
 const JOB_REF = "11111111-1111-4111-8111-111111111111";
 const MODEL0 = "00000000-0000-4000-8000-000000000000";
 const MODEL1 = "11111111-1111-4111-8111-111111111111";
