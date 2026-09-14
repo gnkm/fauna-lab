@@ -79,7 +79,7 @@ test("アップロードからラベルと分割まで UI で完了し _state �
   await expect(
     page.getByRole("heading", { name: "アノテーション", level: 1 }),
   ).toBeVisible();
-  await expect(page.getByTestId("suggestion-unavailable")).toBeVisible();
+  await expect(page.getByTestId("suggest-generate")).toBeVisible();
 
   const cards = page.locator(".thumb-card");
   await expect(cards).toHaveCount(2);

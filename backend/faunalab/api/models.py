@@ -32,6 +32,7 @@ def _model_to_api(row: ModelRow) -> dict[str, Any]:
         "version": row.version,
         "builtin": row.builtin,
         "active": row.active,
+        "created_at": row.created_at,
         "metrics": row.metrics,
     }
 

@@ -89,6 +89,30 @@ export async function sendJson<T>(
   return JSON.parse(text) as T;
 }
 
+export async function postForm<T>(
+  path: string,
+  form: FormData,
+  signal?: AbortSignal,
+): Promise<T> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    body: form,
+    signal,
+  });
+  if (!response.ok) {
+    throw await readProblem(response);
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  const text = await response.text();
+  if (text.trim() === "") {
+    return undefined as T;
+  }
+  return JSON.parse(text) as T;
+}
+
 export async function sendDelete(
   path: string,
   signal?: AbortSignal,
