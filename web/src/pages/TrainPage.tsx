@@ -14,6 +14,7 @@ import {
   type JobCreateParams,
   type JobLogEntry,
 } from "../domain/jobs";
+import { useLatestRequest, useLivePoll } from "../hooks/useLivePoll";
 import { Link } from "../router/Link";
 
 const POLL_MS = 4000;
@@ -22,6 +23,9 @@ type JobRowView = Job & { latestLog: JobLogEntry | null };
 
 async function loadRows(signal?: AbortSignal): Promise<JobRowView[]> {
   const page = await fetchJobs(50, 0, signal);
+  if (signal?.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
   const rows: JobRowView[] = [];
   for (const job of page.items) {
     let latestLog: JobLogEntry | null = null;
@@ -29,7 +33,10 @@ async function loadRows(signal?: AbortSignal): Promise<JobRowView[]> {
       try {
         const logs = await fetchJobLogs(job.ref, 200, 0, signal);
         latestLog = logs.items.at(-1) ?? null;
-      } catch {
+      } catch (reason: unknown) {
+        if (signal?.aborted) {
+          throw reason;
+        }
         latestLog = null;
       }
     }
@@ -46,14 +53,19 @@ export function TrainPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [params, setParams] = useState<JobCreateParams>(DEFAULT_JOB_PARAMS);
   const [cancelRef, setCancelRef] = useState<string | null>(null);
+  const beginRequest = useLatestRequest();
 
-  const refresh = useCallback(async (signal?: AbortSignal) => {
-    const rows = await loadRows(signal);
-    if (signal?.aborted) {
-      return;
-    }
-    setJobs(rows);
-  }, []);
+  const refresh = useCallback(
+    async (signal?: AbortSignal) => {
+      const { isCurrent } = beginRequest();
+      const rows = await loadRows(signal);
+      if (signal?.aborted || !isCurrent()) {
+        return;
+      }
+      setJobs(rows);
+    },
+    [beginRequest],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,25 +93,19 @@ export function TrainPage() {
 
   const hasLive = jobs.some((job) => isLiveJob(job));
 
-  useEffect(() => {
-    if (!hasLive) {
-      return;
-    }
-    const id = window.setInterval(() => {
-      refresh().catch((reason: unknown) => {
-        setError(errorMessage(reason));
-      });
-    }, POLL_MS);
-    return () => {
-      window.clearInterval(id);
-    };
-  }, [hasLive, refresh]);
+  useLivePoll(hasLive, POLL_MS, refresh, (reason) => {
+    setError(errorMessage(reason));
+  });
 
   const busy = loading || pending;
 
   const onStart = (event: FormEvent) => {
     event.preventDefault();
     if (pending) {
+      return;
+    }
+    if (!(params.learning_rate > 0) || !Number.isFinite(params.learning_rate)) {
+      setError("学習率は 0 より大きい有限値にしてください。");
       return;
     }
     setPending(true);
@@ -203,7 +209,7 @@ export function TrainPage() {
             学習率
             <input
               type="number"
-              min={0}
+              min={0.0001}
               step={0.0001}
               value={params.learning_rate}
               onChange={(event) => {

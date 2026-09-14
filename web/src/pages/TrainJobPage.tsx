@@ -12,6 +12,7 @@ import {
   type Job,
   type JobLogEntry,
 } from "../domain/jobs";
+import { useLatestRequest, useLivePoll } from "../hooks/useLivePoll";
 import { Link } from "../router/Link";
 import { useRouter } from "../router/Router";
 
@@ -27,10 +28,15 @@ export function TrainJobPage() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const beginRequest = useLatestRequest();
 
   const refresh = useCallback(
     async (signal?: AbortSignal) => {
+      const { isCurrent } = beginRequest();
       const next = await fetchJob(ref, signal);
+      if (signal?.aborted || !isCurrent()) {
+        return;
+      }
       if (next === null) {
         setJob(null);
         setMissing(true);
@@ -38,14 +44,14 @@ export function TrainJobPage() {
         return;
       }
       const page = await fetchJobLogs(ref, 200, 0, signal);
-      if (signal?.aborted) {
+      if (signal?.aborted || !isCurrent()) {
         return;
       }
       setJob(next);
       setLogs(page.items);
       setMissing(false);
     },
-    [ref],
+    [beginRequest, ref],
   );
 
   useEffect(() => {
@@ -79,19 +85,9 @@ export function TrainJobPage() {
 
   const live = job !== null && isLiveJob(job);
 
-  useEffect(() => {
-    if (!live) {
-      return;
-    }
-    const id = window.setInterval(() => {
-      refresh().catch((reason: unknown) => {
-        setError(errorMessage(reason));
-      });
-    }, POLL_MS);
-    return () => {
-      window.clearInterval(id);
-    };
-  }, [live, refresh]);
+  useLivePoll(live, POLL_MS, refresh, (reason) => {
+    setError(errorMessage(reason));
+  });
 
   const onConfirmCancel = () => {
     if (pending || job === null) {
