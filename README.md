@@ -6,7 +6,7 @@
 [SRS](docs/source-of-truth/srs-faunalab.md)の内容を実装する。
 成果物は、[タスク書類](docs/source-of-truth/task-faunalab.md)に記載の内容。
 
-実装前の技術選定・実行形態・データ配置は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) を正とする。提出物の `DESIGN.md` とは別物である。HTTP API のパス・誤り語彙の契約は [openapi.yaml](openapi.yaml)（OpenAPI 3.1）。
+提出物の設計は [DESIGN.md](DESIGN.md)。HTTP API の契約は [openapi.yaml](openapi.yaml)（OpenAPI 3.1、実装と一致）。言語・実行形態・データ配置の実装前合意は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## 起動（Podman）
 
@@ -86,9 +86,12 @@ pnpm export-licenses
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/api/sample/import
+curl -sS http://127.0.0.1:8000/api/_state
 ```
 
 `assets/sample/` が無い、またはマニフェスト／画像が読めない場合は HTTP 422（`sample_unavailable`）で失敗します。起動自体は継続します（REQ-F-SYS-003）。
+
+観測 `GET /api/_state` は読み取り専用です。評価と受入確認はここを見ます。
 
 画像の登録・ラベル・分割・学習・推論は Web UI からも行えます。
 
@@ -111,6 +114,19 @@ curl -sS -X POST http://127.0.0.1:8000/api/labels/bulk \
 curl -sS -X POST http://127.0.0.1:8000/api/splits -H 'content-type: application/json' -d '{}'
 curl -sS http://127.0.0.1:8000/api/stats
 ```
+
+## 主要な設計判断
+
+REQ-ATT-MNT-004。根拠と不採用案の詳細は [DESIGN.md](DESIGN.md)。
+
+| 判断 | 根拠 |
+| --- | --- |
+| 実行は **Podman Compose**。単一コマンドは `podman compose up --pull never`。セットアップは `podman compose build` | 提出時の単一起動（REQ-CON-002）。実行段階でレジストリへ取りに行かない。Cloud Agent だけ `docker compose` に読み替える（I-ENV-001） |
+| コンテナは `app` 1 つ。学習は同一コンテナの別プロセス | SQLite とデータディレクトリ複製を単純に保つ。API を学習でブロックしない |
+| 状態は SQLite（WAL）とデータディレクトリ上のファイル | 停止後にディレクトリ全体を複製すれば復元できる（REQ-ATT-POR-001） |
+| API プロセスは ONNX Runtime のみ。学習は NumPy でヘッド／小型 CNN を訓練し ONNX を書く | 常駐メモリ（REQ-PERF-006）。PyPI の `torch` 車輪は CUDA 再配布を含みライセンス方針と衝突する（I-TRN-003） |
+| 誤りは RFC 9457。REQ-API-003 の 7 状況は異なる HTTP ステータス | 409 は対象の状態衝突、422 はシステム前提の不足（I-ERR-001） |
+| `GET /api/_state` は内部表を SRS 語彙へ変換するだけ | 評価窓であり、永続スキーマをそのまま返さない |
 
 ## コントリビューション
 

@@ -2,10 +2,10 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 対象 Issue | #3（機能 ID F002）、#7（機能 ID F006）、F018 |
+| 対象 Issue | #3（機能 ID F002）、#7（機能 ID F006）、#19（F018）、#20（F019） |
 | 正本 | SRS-FAUNALAB-002 **版 2.2**、TASK-FAUNALAB-001 版 1.0 |
-| 状態 | 実装前の枠と初期判断。実装と食い違ったら実装に合わせて更新する。最終一致確認は F019 |
-| 関連 | 言語・実行形態・データ配置の実装前合意は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（F001 / #2）。API パス・誤り語彙の契約は [openapi.yaml](openapi.yaml)（F006 / #7）。本ファイルは提出物の設計書であり、転記したうえで API・誤り・観測変換をここで固定する |
+| 状態 | 実装と一致した提出物の最終設計。食い違いが出たら実装に合わせて更新する |
+| 関連 | 言語・実行形態・データ配置の実装前合意は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（F001 / #2）。API パス・誤り語彙と JSON フィールドの契約は [openapi.yaml](openapi.yaml)（F006 / #7、F019）。本ファイルは提出物の設計書である |
 
 仕様に書かれていない事項ほど厚く書く。未決は「未決」と理由を残す。解釈は 10 節に集約する。
 
@@ -134,17 +134,17 @@ Web UI は History API のパスで画面を復元する（ハッシュは使わ
 | --- | --- | --- |
 | バックエンド | Python 3.12、FastAPI、Uvicorn | ML と API を同一言語に閉じ、OpenAPI 生成を REQ-API-002 に直結させる |
 | データの保持 | SQLite（WAL、`foreign_keys=ON`）+ データディレクトリ上のファイル | プロセス追加なし。停止後にディレクトリ全体を複製すれば復元できる |
-| 推論 | ONNX Runtime。学習成果は可能な限り ONNX へ書き出し、API プロセスは PyTorch を載せない | 配布資産が ONNX。常駐メモリ 1 GiB（REQ-PERF-006） |
-| 学習 | PyTorch CPU。ベースライン利用時は凍結 embedding + 分類ヘッド。GPU は任意 | フルバックボーンは 4 論理 CPU・30 分制約に対して過剰 |
-| 前処理 | Pillow + NumPy（短辺 256・中央 224・ImageNet 正規化）。学習ワーカでのみ torchvision を足してよい | API に PyTorch を載せない（REQ-PERF-006）。手順は torchvision の ImageNet 評価前処理と同一（I-BASE-001） |
+| 推論 | ONNX Runtime。学習成果は ONNX へ書き出し、API プロセスは PyTorch を載せない | 配布資産が ONNX。常駐メモリ 1 GiB（REQ-PERF-006） |
+| 学習 | NumPy。ベースライン利用時は凍結 embedding + 線形分類ヘッド。GPU は使わない | PyPI の `torch` は CUDA 再配布を含み REQ-CON-003 と衝突する（I-TRN-003） |
+| 前処理 | Pillow + NumPy（短辺 256・中央 224・ImageNet 正規化） | API に PyTorch を載せない（REQ-PERF-006）。手順は torchvision の ImageNet 評価前処理と同一（I-BASE-001） |
 | フロントエンド | TypeScript + Vite + React。静的成果物を API と同じオリジンで配信 | 既存の pnpm / Biome と整合。実行時 Node を増やさない |
 | パッケージ管理 | バックエンドは uv（`pyproject.toml` / `uv.lock`）、フロントは pnpm | lefthook の osv-scanner 対象と一致 |
 | 静的解析 | フロントは Biome、バックエンドは Ruff、型は Pyright | REQ-ATT-MNT-003。型チェッカは骨格 Issue で Pyright に固定 |
 | 試験 | pytest（API / `_state`）、Playwright（UI の一部） | SRS 4 章の「操作は UI、確認は `_state`」に合わせる |
 | 実行環境 | **Podman**（ローカルおよび提出）。単一コマンドは Compose | リポジトリ共通制約。Cloud Agent では同一 OCI を Docker Compose で起動する |
-| 学習の計算 | CPU で完結。GPU があれば使ってよいが必須ではない | REQ-HW-002、1.3.4 |
+| 学習の計算 | CPU で完結。GPU は必須ではない | REQ-HW-002、1.3.4。実装は NumPy（I-TRN-003） |
 
-分類ヘッドの層数（線形のみか 1 隠れ層か）は **未決**。既定経路は線形とし、偶然水準を上回らなければ 1 隠れ層を DESIGN に追記する。
+分類ヘッドは線形 1 層（I-TRN / 7.3）。偶然水準を上回ることを自動試験で確認する。
 
 ### 2.2 実行形態
 
@@ -175,7 +175,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 
 ## 3. API 設計
 
-観測エンドポイント以外のパスは仕様が沈黙している。リソースの切り方と命名をここで固定し、骨格を [openapi.yaml](openapi.yaml) に置く。JSON フィールドの最終集合は実装 Issue で足し、F019 で実装と一致させる。未記載の細部は **未決** とし、本節と `openapi.yaml` の方針から外さない。
+観測エンドポイント以外のパスは仕様が沈黙している。リソースの切り方と命名をここで固定し、契約を [openapi.yaml](openapi.yaml) に置く。JSON フィールドは実装と一致させた（F019）。未記載の細部は本節と `openapi.yaml` の方針から外さない。
 
 ### 3.1 方針
 
@@ -236,9 +236,9 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 | 部分成功アップロードを 207 Multi-Status にする | クライアントと OpenAPI が重い。1 件でも成功すれば 200 とし、件別 `ok` / `code` で区別する |
 | JSON:API / HAL | 評価観点は一貫性と命名であり、過剰 |
 
-### 3.4 未決（API）
+### 3.4 フィールド集合と残る余地
 
-- 各操作の応答 JSON のうち、`openapi.yaml` にまだ無い追加フィールド。骨格の必須キーは契約済み。画像の `original_name` / `size_bytes` / `width` / `height` / `created_at` / `media_type` は F008 で契約した。候補の生成・一覧・採用・却下のフィールドは F012 で契約した。
+- 各操作の応答 JSON は `openapi.yaml` を正とする。画像の `original_name` / `size_bytes` / `width` / `height` / `created_at` / `media_type` はプログラムインタフェースのみ。観測の画像は SRS 3.1.3 の必須キーに閉じる（`ObservationImage`）。モデル版の `created_at` もプログラム側だけ（`ObservationModel` には含めない）。
 - ページングを cursor にする必要が出た場合。想定規模 5,000 では offset で足りる。
 
 ### 3.5 画像の登録と削除（F008）
@@ -307,7 +307,7 @@ Django、PostgreSQL、TensorFlow、既定経路でのバックボーンファイ
 | `image_not_found` | 404 | 画像不在 |
 | `job_not_found` | 404 | ジョブ不在 |
 | `model_not_found` | 404 | モデル版不在 |
-| `inference_not_found` | 404 | 推論履歴不在（単体取得を足す場合） |
+| `inference_not_found` | 404 | 推論履歴不在。単体取得パスは置いていないが、語彙は 7 類に対応付けて予約する |
 | `suggestion_not_found` | 404 | 却下対象の候補が無い |
 | `image_duplicate` | 409 | 同一 SHA-256 が既登録 |
 | `job_not_cancelable` | 409 | 終端状態への中止 |
@@ -385,11 +385,11 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 | REQ-DATA-009 | 存在しない画像をラベル・候補・推論が参照しない | `FOREIGN KEY ... ON DELETE CASCADE`（推論は画像削除時に履歴も消す。REQ-F-IMG-009） |
 | REQ-DATA-010 | ジョブ履歴はモデル削除後も残る | ジョブからモデルへの FK は `ON DELETE SET NULL`。ジョブ行は消さない |
 
-起動時および学習ワーカ開始時に上記を SQL で検算し、違反があれば起動を続けつつ 500 相当をログに残すか、修復可能なもの（残存 `RUNNING`）だけ修復する。修復方針の追加は実装時。**未決**: 修復不能な破損 DB を拒否して起動するか、空で起きるか。想定は「警告して起動し、書き込み API は 500」だが、骨格実装まで確定しない。
+起動時は残存 `RUNNING` だけ修復する（5.5）。上記の不変条件は制約で拒否し、操作後の検算は試験（VER-DATA-002）が `_state` から行う。起動時の全件 SQL 検算は置かない。SQLite ファイルが開けない、または DDL が失敗すればプロセスは起動しない。空の DB で起き直すことはしない。
 
 ### 6.1 SQLite 表（F007）
 
-単一ファイル `${FAUNALAB_DATA_DIR}/db.sqlite3`。WAL、`foreign_keys=ON`。版は `PRAGMA user_version`（現行 2）。マイグレーション専用ツールは置かず、起動時に `CREATE IF NOT EXISTS` とクラスの UPSERT を走らせる。`models.deleted` が無い既存 DB は起動時に列を足す。
+単一ファイル `${FAUNALAB_DATA_DIR}/db.sqlite3`。WAL、`foreign_keys=ON`。版は `PRAGMA user_version`（現行 3）。マイグレーション専用ツールは置かず、起動時に `CREATE IF NOT EXISTS` とクラスの UPSERT を走らせる。`models.deleted` および `jobs.cancel_requested` が無い既存 DB は起動時に列を足す。
 
 データディレクトリ配下の配置は ARCHITECTURE.md 6.2 のとおり（`images/`、`thumbs/`、`models/`、`jobs/`）。画像バイトは表に入れない。
 
@@ -401,7 +401,8 @@ API プロセス起動時（ワーカより先）に、`status = 'RUNNING'` の�
 | `suggestions` | 候補ラベル。画像あたり高々 1 | `image_id` PK |
 | `models` | モデル版。`builtin` は `version = 0` と一致する CHECK。有効は部分一意索引。削除は `deleted=1` の論理削除（版番号を再利用しない） | 整数 `id` + UUID `ref` |
 | `jobs` | 学習ジョブ。`RUNNING` は部分一意。モデル削除時は `model_id` を NULL | 整数 `id` + UUID `ref` |
-| `inferences` | 推論履歴。画像削除で CASCADE | 整数 `id` + UUID `ref` |
+| `job_epoch_logs` | エポックごとの損失・検証正解率。ジョブ削除で CASCADE。JSONL ファイルにも追記 | 整数 `id`。公開は `GET /api/jobs/{ref}/logs` |
+| `inferences` | 推論履歴。画像削除で CASCADE。`scores_json` は必須 | 整数 `id` + UUID `ref` |
 
 `GET /api/_state` はこれらの表を SRS 語彙へ写すだけで、書き込まない。版 0（ベースライン）は F010 で起動時に登録する。`assets/` が無くても起動する。
 
@@ -476,10 +477,11 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 | `models[].version` | 整数。版 0 がベースライン |
 | `models[].builtin` | 版 0 のみ `true` |
 | `models[].active` | 有効なら `true`。高々 1 件 |
-| `models[].metrics` | 未評価は `null`。評価済は 8.3 |
+| `models[].metrics` | 未評価は `null`。評価済は 8.3。`created_at` は観測の必須キーに含めない（プログラム一覧だけが持つ） |
 | `inferences[].other_mass` | 版 0 なら実数、学習済モデルなら `null` |
 | `inferences[].low_confidence` | 閾値（環境変数）と 7.2 の全 0.125 規則 |
 | `inferences[].top_class_id` / `top_confidence` | 8 クラス信頼度の最大。同率は `display_order` が小さい方（解釈 I-OBS-001） |
+| `inferences[].scores` | 追加キー。8 クラスの信頼度降順。SRS 必須ではないが実装は常に付ける |
 
 `_state` の決定的順序（試験再現のため昇順。プログラム一覧の向きは I-API-003）:
 
@@ -523,7 +525,7 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 実装済み（対応表の試験列から辿れる）:
 
 - VER-OBS-001（`_state` 構造・列挙・副作用無し。一致判定は `observed_at` を除く）
-- VER-API-001 のうち OpenAPI の path+method と実装の一致、7 類ステータスの区別、本文にパス/トレースが無いこと。全操作の網羅呼び出しは F019
+- VER-API-001（OpenAPI の path+method と実装の一致、7 類ステータスの区別、本文にパス/トレースが無いこと、文書に記載した全操作の呼び出し）
 - VER-F-IMG-001〜005、VER-F-ANN-001、VER-F-DS-001〜002
 - VER-F-TRN-001〜007（強制終了は残存 `RUNNING` の再起動で代替。自動試験は短縮エポック）
 - VER-F-MDL-001〜002、VER-F-INF-001〜002
@@ -563,7 +565,6 @@ SRS 4.0 は「状態変更は Web UI 自動操作、確認は `_state`」と書�
 
 - VER-USE-002 の全画面目視。空状態と確認ダイアログは Playwright で部分的に拾う。
 - GPU 経路。GPU は任意であり、CPU 経路だけを自動試験する。
-- VER-API-001 の「文書に記載されたすべての操作を呼び出す」完全網羅。パス集合の一致と 7 類は 9.1。残りは F019。
 
 行カバレッジ 70 %（REQ-ATT-MNT-001）は pytest-cov の `fail_under = 70` で落とす。
 
@@ -574,7 +575,7 @@ SRS 4.0 は「状態変更は Web UI 自動操作、確認は `_state`」と書�
 | 識別子 | 区分 | メモ |
 | --- | --- | --- |
 | VER-OBS-001 | 9.1 | `observed_at` 除外の一致 |
-| VER-API-001 | 9.1 | パス一致・7 類・本文漏洩。全操作呼び出しは F019 |
+| VER-API-001 | 9.1 | パス一致・7 類・本文漏洩・全操作呼び出し |
 | VER-UI-001 | 9.2 | 全画面 URL。REQ-UI 全項目の網羅は段階的 |
 | VER-COM-001 | 9.3 | 遮断下の一連操作は提出時 |
 | VER-F-IMG-001〜005 | 9.1 | `test_images.py` |
@@ -740,12 +741,8 @@ Compose のネットワーク制約はホスト級の完全遮断ではない（
 
 | 項目 | 理由 |
 | --- | --- |
-| JSON フィールドの最終集合 | パス・誤り・ページネーションは F006 の `openapi.yaml`。残る追加フィールドは実装 Issue。一致確認は F019 |
-| 型チェッカ（Pyright / mypy） | Pyright を骨格で固定済。分類ヘッドは線形 1 層（I-TRN / 7.3） |
-| `_state` の 5 秒を超える場合のキャッシュ | 実測前に入れない |
-| 破損 DB の起動継続 vs 拒否 | 6 節。修復不能ケースの運用が未整備 |
+| `_state` の 5 秒を超える場合のキャッシュ | 実測前に入れない。現状は都度読み出し |
 | 推論・候補の非同期化 | 同期で性能を満たせると仮定。満たせなければ更新する |
-| `.cursor/environment.json` の Python 依存 | lockfile 追加時（F001 が骨格へ委譲） |
 
 ### 10.4 時間があれば改善したい箇所
 

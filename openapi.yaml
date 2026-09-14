@@ -1,6 +1,6 @@
-# FaunaLab OpenAPI 3.1 骨格（F006 / #7）。
-# パス・HTTP メソッド・ページネーション・誤り語彙・観測インタフェースを固定する。
-# 詳細フィールドは実装 Issue で足し、F019 で実装と一致させる。
+# FaunaLab OpenAPI 3.1 契約（REQ-API-002、F006 / #7、F019 / #20）。
+# パス・HTTP メソッド・ページネーション・誤り語彙・観測インタフェースと
+# プログラムインタフェースの JSON フィールドは実装と一致させる。
 # 採らなかったパス設計は DESIGN.md 3.3 節。
 openapi: "3.1.0"
 info:
@@ -53,7 +53,7 @@ info:
     空なら同一オリジンのみ（既定の提出形態）。パスとしては表さない。
 
     実行時の生成文書は FastAPI の `/openapi.json`。本ファイルが契約の正本であり、
-    実装との最終一致は F019。
+    path+method と応答フィールドは実装と一致する（F019）。
   contact:
     name: FaunaLab
 servers:
@@ -1382,6 +1382,7 @@ components:
           description: true ならベースライン（版 0）
     JobCreateRequest:
       type: object
+      additionalProperties: false
       properties:
         epochs:
           type: integer
@@ -1536,9 +1537,10 @@ components:
           $ref: "#/components/schemas/PerClassMetrics"
         confusion_matrix:
           $ref: "#/components/schemas/ConfusionMatrix"
-    Model:
+    ObservationModel:
       type: object
-      required: [ref, version, builtin, active, created_at, metrics]
+      required: [ref, version, builtin, active, metrics]
+      description: 観測インタフェースのモデル版。SRS 3.1.3 の必須キーのみ。
       properties:
         ref:
           $ref: "#/components/schemas/Ref"
@@ -1549,12 +1551,19 @@ components:
           type: boolean
         active:
           type: boolean
-        created_at:
-          $ref: "#/components/schemas/DateTime"
         metrics:
           oneOf:
             - $ref: "#/components/schemas/Metrics"
             - type: "null"
+    Model:
+      allOf:
+        - $ref: "#/components/schemas/ObservationModel"
+        - type: object
+          required: [created_at]
+          properties:
+            created_at:
+              $ref: "#/components/schemas/DateTime"
+              description: プログラムインタフェースのみ。観測の必須キーには含めない。
     ClassScore:
       type: object
       required: [class_id, confidence]
@@ -2018,6 +2027,7 @@ components:
           $ref: "#/components/schemas/Ref"
     SuggestionCreateRequest:
       type: object
+      additionalProperties: false
       properties:
         refs:
           type: array
@@ -2037,6 +2047,7 @@ components:
           minimum: 0
     RefListRequest:
       type: object
+      additionalProperties: false
       required: [refs]
       properties:
         refs:
@@ -2046,6 +2057,7 @@ components:
             $ref: "#/components/schemas/Ref"
     ThresholdAcceptRequest:
       type: object
+      additionalProperties: false
       required: [min_confidence]
       properties:
         min_confidence:
@@ -2087,7 +2099,7 @@ components:
         models:
           type: array
           items:
-            $ref: "#/components/schemas/Model"
+            $ref: "#/components/schemas/ObservationModel"
         inferences:
           type: array
           items:

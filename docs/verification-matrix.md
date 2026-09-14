@@ -15,7 +15,7 @@
 | VER ID | 方法 | 試験 | 未実装・制限の理由 |
 | --- | --- | --- | --- |
 | `VER-OBS-001` | pytest | `test_state.py`（`test_state_has_required_keys` / `test_consecutive_gets_are_equal_except_observed_at`）。UI 反映は Playwright | Web UI 全操作後の確認は 9.2 の経路で部分的 |
-| `VER-API-001` | pytest | `test_ver_api.py` / `test_openapi_contract.py` / `test_state.py::test_unhandled_exception_returns_problem_and_keeps_process` | OpenAPI 全操作の網羅呼び出しは F019。本表はパス集合の一致・7 類ステータス・本文漏洩 |
+| `VER-API-001` | pytest | `test_ver_api.py` / `test_openapi_contract.py` / `test_state.py::test_unhandled_exception_returns_problem_and_keeps_process` | path+method 一致、7 類、本文漏洩、文書の全操作呼び出し |
 | `VER-UI-001` | playwright | `e2e/overview.spec.ts` / `e2e/images-annotate-splits.spec.ts` / `e2e/train-models-infer.spec.ts` | 全 REQ-UI の網羅ではなく、全画面 URL 直達・リロードと主経路 |
 | `VER-COM-001` | manual | 提出時。補助: `test_ver_con.py::test_ver_con_001_compose_blocks_runtime_pull` | ホスト NIC 切断の完全エアギャップは Cloud Agent / CI で再現しない（DESIGN I-NET-001） |
 | `VER-F-IMG-001` | pytest | `test_images.py::test_ver_f_img_001_jpeg_png_fake_and_oversize` | |

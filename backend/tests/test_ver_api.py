@@ -9,8 +9,9 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
-from faunalab.api.errors import PROBLEM_JSON
+from faunalab.api.errors import ERROR_STATUS, PROBLEM_JSON
 from faunalab.domain.images import MAX_IMAGE_BYTES
+from faunalab.domain.jobs import TERMINAL_STATUSES
 from faunalab.settings import Settings, get_settings
 from PIL import Image
 
@@ -162,3 +163,172 @@ def test_ver_api_001_error_bodies_omit_paths(
         assert response.status_code == 500
         _problem_has_no_leaks(response)
         assert test_client.get("/api/_state").status_code == 200
+
+
+def _documented_ops() -> set[tuple[str, str]]:
+    yaml = pytest.importorskip("yaml")
+    documented = yaml.safe_load(OPENAPI_PATH.read_text(encoding="utf-8"))
+    ops: set[tuple[str, str]] = set()
+    for path, item in documented["paths"].items():
+        for method, spec in item.items():
+            if method.startswith("x-") or not isinstance(spec, dict):
+                continue
+            ops.add((path, method.lower()))
+    return ops
+
+
+def _jpeg_named(color: tuple[int, int, int], name: str) -> tuple[str, bytes, str]:
+    return (name, _jpeg(color), "image/jpeg")
+
+
+def test_ver_api_001_all_documented_operations_are_invoked(
+    tmp_path: Path,
+) -> None:
+    """VER-API-001: 提出 OpenAPI に記載したすべての操作を呼び出す。"""
+
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        assets_dir=REPO_ROOT / "assets",
+        web_dist_dir=tmp_path / "missing-dist",
+    )
+    get_settings.cache_clear()
+    invoked: set[tuple[str, str]] = set()
+    with TestClient(create_app(settings)) as client:
+        def mark(path: str, method: str) -> None:
+            invoked.add((path, method))
+
+        assert client.get("/api/_state").status_code == 200
+        mark("/api/_state", "get")
+        assert client.get("/api/stats").status_code == 200
+        mark("/api/stats", "get")
+        assert client.get("/api/images").status_code == 200
+        mark("/api/images", "get")
+        assert client.get("/api/jobs").status_code == 200
+        mark("/api/jobs", "get")
+        assert client.get("/api/models").status_code == 200
+        mark("/api/models", "get")
+        assert client.get("/api/inferences").status_code == 200
+        mark("/api/inferences", "get")
+        assert client.get("/api/suggestions").status_code == 200
+        mark("/api/suggestions", "get")
+
+        queued = client.post("/api/jobs", json={})
+        assert queued.status_code in {201, 422}
+        mark("/api/jobs", "post")
+        missing_job = client.get(f"/api/jobs/{MISSING_REF}")
+        assert missing_job.status_code == 404
+        mark("/api/jobs/{ref}", "get")
+        logs = client.get(f"/api/jobs/{MISSING_REF}/logs")
+        assert logs.status_code == 404
+        mark("/api/jobs/{ref}/logs", "get")
+        cancel = client.post(f"/api/jobs/{MISSING_REF}/cancel")
+        assert cancel.status_code == 404
+        mark("/api/jobs/{ref}/cancel", "post")
+
+        models = client.get("/api/models").json()["items"]
+        v0 = next(item for item in models if item["version"] == 0)
+        assert "created_at" in v0
+        assert client.get(f"/api/models/{v0['ref']}").status_code == 200
+        mark("/api/models/{ref}", "get")
+        activated = client.post(f"/api/models/{v0['ref']}/activate")
+        assert activated.status_code == 200
+        mark("/api/models/{ref}/activate", "post")
+        evaluated = client.post(f"/api/models/{v0['ref']}/evaluate")
+        assert evaluated.status_code in {200, 422}
+        mark("/api/models/{ref}/evaluate", "post")
+        refused = client.delete(f"/api/models/{v0['ref']}")
+        assert refused.status_code == 409
+        mark("/api/models/{ref}", "delete")
+
+        uploaded = client.post(
+            "/api/images",
+            files=[("files", _jpeg_named((11, 22, 33), "one.jpg"))],
+        )
+        assert uploaded.status_code == 200
+        mark("/api/images", "post")
+        image_ref = uploaded.json()["items"][0]["ref"]
+        detail = client.get(f"/api/images/{image_ref}")
+        assert detail.status_code == 200
+        assert "original_name" in detail.json()
+        mark("/api/images/{ref}", "get")
+        thumb = client.get(f"/api/images/{image_ref}/thumbnail")
+        assert thumb.status_code == 200
+        mark("/api/images/{ref}/thumbnail", "get")
+        labeled = client.put(
+            f"/api/images/{image_ref}/label",
+            json={"class_id": "samoyed", "source": "human"},
+        )
+        assert labeled.status_code == 200
+        mark("/api/images/{ref}/label", "put")
+        bulk = client.post(
+            "/api/labels/bulk",
+            json={"refs": [image_ref], "class_id": "boxer"},
+        )
+        assert bulk.status_code == 200
+        mark("/api/labels/bulk", "post")
+        unlabeled = client.delete(f"/api/images/{image_ref}/label")
+        assert unlabeled.status_code == 204
+        mark("/api/images/{ref}/label", "delete")
+
+        inferred = client.post(
+            "/api/inferences",
+            json={"refs": [image_ref]},
+        )
+        assert inferred.status_code == 200
+        mark("/api/inferences", "post")
+        generated = client.post("/api/suggestions", json={})
+        assert generated.status_code == 200
+        mark("/api/suggestions", "post")
+        accepted = client.post(
+            "/api/suggestions/accept",
+            json={"refs": [image_ref]},
+        )
+        assert accepted.status_code in {200, 404}
+        mark("/api/suggestions/accept", "post")
+        threshold = client.post(
+            "/api/suggestions/accept-by-threshold",
+            json={"min_confidence": 0.99},
+        )
+        assert threshold.status_code == 200
+        mark("/api/suggestions/accept-by-threshold", "post")
+        rejected = client.post(
+            "/api/suggestions/reject",
+            json={"refs": [image_ref]},
+        )
+        assert rejected.status_code in {200, 404}
+        mark("/api/suggestions/reject", "post")
+
+        imported = client.post("/api/sample/import")
+        assert imported.status_code in {200, 422}
+        mark("/api/sample/import", "post")
+        split = client.post("/api/splits", json={})
+        assert split.status_code == 200
+        mark("/api/splits", "post")
+
+        state = client.get("/api/_state").json()
+        for model in state["models"]:
+            assert "created_at" not in model
+        deleted = client.delete(f"/api/images/{image_ref}")
+        assert deleted.status_code == 204
+        mark("/api/images/{ref}", "delete")
+
+    get_settings.cache_clear()
+    missing = _documented_ops() - invoked
+    assert missing == set(), f"documented ops not invoked: {sorted(missing)}"
+
+
+def test_ver_api_001_error_codes_and_job_statuses_match_design() -> None:
+    """VER-API-001: DESIGN の誤り ID とジョブ状態がコードと OpenAPI にある。"""
+
+    yaml = pytest.importorskip("yaml")
+    doc = yaml.safe_load(OPENAPI_PATH.read_text(encoding="utf-8"))
+    enum_codes = doc["components"]["schemas"]["ErrorCode"]["enum"]
+    assert set(enum_codes) == set(ERROR_STATUS)
+    design = (REPO_ROOT / "DESIGN.md").read_text(encoding="utf-8")
+    for code in ERROR_STATUS:
+        assert f"`{code}`" in design, code
+    statuses = doc["components"]["schemas"]["JobStatus"]["enum"]
+    assert set(statuses) == {"QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "CANCELED"}
+    assert TERMINAL_STATUSES == frozenset({"SUCCEEDED", "FAILED", "CANCELED"})
+    for status in statuses:
+        assert status in design
