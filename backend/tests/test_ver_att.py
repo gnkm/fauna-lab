@@ -4,18 +4,23 @@ from __future__ import annotations
 
 import io
 import shutil
+import uuid
 from pathlib import Path
 from typing import Any
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from faunalab.api.app import create_app
 from faunalab.api.errors import PROBLEM_JSON
+from faunalab.domain.models import register_trained_model
+from faunalab.persist.store import Store, SuggestionNew
 from faunalab.settings import Settings, get_settings
 from PIL import Image
 
 from tests.invariants import assert_observation_invariants, without_observed_at
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ASSETS = REPO_ROOT / "assets"
 
 
 def _jpeg(color: tuple[int, int, int] = (8, 9, 10), salt: int = 0) -> bytes:
@@ -137,31 +142,75 @@ def test_ver_att_004_copied_data_dir_restores_state(tmp_path: Path) -> None:
 
     settings = Settings(
         data_dir=tmp_path / "data",
-        assets_dir=tmp_path / "missing-assets",
+        assets_dir=REPO_ASSETS,
         web_dist_dir=tmp_path / "missing-dist",
     )
     get_settings.cache_clear()
     with TestClient(create_app(settings)) as client:
-        uploaded = _upload(client, _jpeg((11, 12, 13), 5), "keep.jpg")
-        assert uploaded.status_code == 200
-        ref = uploaded.json()["items"][0]["ref"]
+        unlabeled = _upload(client, _jpeg((11, 12, 13), 5), "keep.jpg")
+        assert unlabeled.status_code == 200
+        unlabeled_ref = unlabeled.json()["items"][0]["ref"]
+        labeled_upload = _upload(client, _jpeg((21, 22, 23), 7), "labeled.jpg")
+        assert labeled_upload.status_code == 200
+        labeled_ref = labeled_upload.json()["items"][0]["ref"]
         labeled = client.put(
-            f"/api/images/{ref}/label",
+            f"/api/images/{labeled_ref}/label",
             json={"class_id": "chihuahua", "source": "human"},
         )
         assert labeled.status_code == 200
+
+        app = client.app
+        assert isinstance(app, FastAPI)
+        store = app.state.store
+        assert isinstance(store, Store)
+        models = client.get("/api/_state").json()["models"]
+        v0 = next(item for item in models if item["version"] == 0)
+        generated, skipped = store.upsert_suggestions(
+            model_ref=v0["ref"],
+            items=[
+                SuggestionNew(
+                    image_ref=unlabeled_ref,
+                    class_id="boxer",
+                    confidence=0.81,
+                    created_at="2026-09-13T00:00:00Z",
+                )
+            ],
+        )
+        assert generated == 1
+        assert skipped == 0
+        trained = register_trained_model(
+            store, ref=str(uuid.uuid4()), created_at="2026-09-13T00:00:01Z"
+        )
+        assert trained.active is True
+
         original = without_observed_at(client.get("/api/_state").json())
+        by_ref = {item["ref"]: item for item in original["images"]}
+        assert by_ref[labeled_ref]["label"]["class_id"] == "chihuahua"
+        suggestion = by_ref[unlabeled_ref]["suggestion"]
+        assert suggestion is not None
+        assert suggestion["class_id"] == "boxer"
+        assert suggestion["model_ref"] == v0["ref"]
+        versions = {item["version"]: item for item in original["models"]}
+        assert 0 in versions
+        assert trained.version in versions
+        assert versions[trained.version]["active"] is True
+        assert versions[0]["active"] is False
     replica = tmp_path / "replica"
     shutil.copytree(settings.data_dir, replica)
     copied = Settings(
         data_dir=replica,
-        assets_dir=tmp_path / "missing-assets",
+        assets_dir=REPO_ASSETS,
         web_dist_dir=tmp_path / "missing-dist",
     )
     get_settings.cache_clear()
     with TestClient(create_app(copied)) as client:
         restored = without_observed_at(client.get("/api/_state").json())
     assert restored == original
-    assert restored["images"][0]["label"]["class_id"] == "chihuahua"
+    restored_by_ref = {item["ref"]: item for item in restored["images"]}
+    assert restored_by_ref[labeled_ref]["label"]["class_id"] == "chihuahua"
+    assert restored_by_ref[unlabeled_ref]["suggestion"]["class_id"] == "boxer"
+    restored_models = {item["version"]: item for item in restored["models"]}
+    assert restored_models[0]["active"] is False
+    assert restored_models[trained.version]["active"] is True
     assert_observation_invariants({"observed_at": "x", **restored})
     get_settings.cache_clear()

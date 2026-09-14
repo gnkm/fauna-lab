@@ -61,4 +61,4 @@
 | `VER-ATT-001` | pytest | `test_ver_att.py::test_ver_att_001_malformed_requests_keep_process` / `test_state.py` 未処理例外 | |
 | `VER-ATT-002` | pytest / playwright | `test_ver_att.py::test_ver_att_002_special_names_stay_values` / `test_images.py` パス横断 / `e2e/images-annotate-splits.spec.ts` HTML | |
 | `VER-ATT-003` | pytest | `test_ver_att.py::test_ver_att_003_readme_lint_and_single_command`。カバレッジ 70 % は `pyproject.toml` の `fail_under` | Playwright は単一コマンドに含めない（ブラウザ取得がセットアップ） |
-| `VER-ATT-004` | pytest | `test_ver_att.py::test_ver_att_004_copied_data_dir_restores_state` | 縮小データ。別ホストへの提出時コピー手順は ARCHITECTURE 6.4 |
+| `VER-ATT-004` | pytest | `test_ver_att.py::test_ver_att_004_copied_data_dir_restores_state` | 縮小データ（画像・確定ラベル・候補・モデル版・有効選択）。別ホストへの提出時コピー手順は ARCHITECTURE 6.4 |

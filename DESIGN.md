@@ -532,7 +532,7 @@ ONNX Runtime で `logits` を得る。HTTP は `POST /api/inferences` / `GET /ap
 - VER-ATT-001 の API 部分
 - VER-ATT-002 のうちパス横断・特殊文字列・サイズ上限（REQ-ATT-SEC-001〜003、005）。HTML エスケープ表示（REQ-ATT-SEC-004）は 9.2
 - VER-ATT-003（試験コマンド 1 回、カバレッジ 70 %、静的解析設定、README 記載項目）
-- VER-ATT-004 の縮小複製（一時ディレクトリ上のコピー。別ホスト手順は提出時）
+- VER-ATT-004 の縮小複製（画像・確定ラベル・候補・モデル版・有効選択を含む。別ホスト手順は提出時）
 - VER-CON-001 の Compose 代替（`pull_policy: never` と masquerade 無効）
 - VER-CON-002 のライセンス一覧・環境変数・偶然水準（短縮エポック）
 
